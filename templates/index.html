@@ -1,0 +1,1659 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Find a Card &mdash; Agentic Discovery</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        :root {
+            --mc-orange: #FF5F00; --mc-red: #EB001B; --mc-yellow: #F79E1B;
+            --mc-dark: #0f0f0f; --mc-darker: #090909;
+            --mc-card: #1a1a1a; --mc-card-border: rgba(255,255,255,0.06);
+            --mc-text: #e8e8e8; --mc-text-dim: #8a8a8a;
+            --mc-accent: #FF5F00; --mc-green: #34d399; --mc-blue: #60a5fa;
+            --radius: 16px; --radius-sm: 10px;
+            --transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        html { scroll-behavior: smooth; }
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--mc-darker); color: var(--mc-text); line-height: 1.6; overflow-x: hidden;
+        }
+
+        /* ── Animated Background ── */
+        .bg-grid {
+            position: fixed; inset: 0; z-index: 0;
+            background-image:
+                radial-gradient(circle at 20% 50%, rgba(235,0,27,0.06) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(247,158,27,0.05) 0%, transparent 50%),
+                radial-gradient(circle at 50% 80%, rgba(255,95,0,0.03) 0%, transparent 50%);
+            pointer-events: none;
+        }
+        .bg-grid::after {
+            content: ''; position: absolute; inset: 0;
+            background-image:
+                linear-gradient(rgba(255,255,255,0.015) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255,255,255,0.015) 1px, transparent 1px);
+            background-size: 60px 60px;
+        }
+        .container { position: relative; z-index: 1; max-width: 1200px; margin: 0 auto; padding: 0 24px; }
+
+        /* ── Header ── */
+        header {
+            padding: 0; border-bottom: 1px solid var(--mc-card-border);
+            position: sticky; top: 0; z-index: 100;
+            background: rgba(9,9,9,0.92); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
+        }
+        .header-top {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 16px 0;
+        }
+        .logo { display: flex; align-items: center; gap: 14px; }
+        .mc-circles { width: 44px; height: 28px; position: relative; }
+        .mc-circles .circle { width: 28px; height: 28px; border-radius: 50%; position: absolute; top: 0; }
+        .mc-circles .circle.red { background: var(--mc-red); left: 0; }
+        .mc-circles .circle.yellow { background: var(--mc-yellow); left: 16px; mix-blend-mode: screen; }
+        .logo-text { font-size: 20px; font-weight: 700; letter-spacing: -0.5px; }
+        .logo-text span { color: var(--mc-orange); }
+        .header-badge {
+            display: flex; align-items: center; gap: 6px; padding: 5px 12px;
+            background: rgba(52,211,153,0.08); border: 1px solid rgba(52,211,153,0.15);
+            border-radius: 100px; font-size: 11px; font-weight: 600; color: var(--mc-green); letter-spacing: 0.5px;
+        }
+        .pulse-dot { width: 6px; height: 6px; background: var(--mc-green); border-radius: 50%; animation: pulse 2s ease-in-out infinite; }
+        @keyframes pulse { 0%,100% { opacity:1; transform:scale(1); } 50% { opacity:0.5; transform:scale(0.8); } }
+
+        /* ── Steps (inline header) ── */
+        .steps-bar {
+            display: flex; align-items: center; gap: 0; padding: 0 0 12px;
+            overflow-x: auto; scrollbar-width: none; -ms-overflow-style: none;
+        }
+        .steps-bar::-webkit-scrollbar { display: none; }
+        .step-item {
+            display: flex; align-items: center; gap: 6px; padding: 5px 12px; border-radius: 100px;
+            font-size: 11px; font-weight: 600; color: rgba(255,255,255,0.28); transition: var(--transition);
+            cursor: pointer; white-space: nowrap; user-select: none;
+        }
+        .step-item:hover { color: rgba(255,255,255,0.5); }
+        .step-item.active { background: rgba(255,95,0,0.1); color: var(--mc-orange); }
+        .step-item.active:hover { color: var(--mc-orange); }
+        .step-item.completed { color: var(--mc-green); }
+        .step-item.completed:hover { color: #5eeab5; }
+        .step-num {
+            width: 20px; height: 20px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+            font-size: 10px; font-weight: 700; border: 1.5px solid currentColor; flex-shrink: 0;
+        }
+        .step-item.completed .step-num { background: var(--mc-green); border-color: var(--mc-green); color: #000; }
+        .step-connector { width: 16px; height: 1px; background: rgba(255,255,255,0.06); flex-shrink: 0; }
+
+        /* ── Panels ── */
+        .panel { display: none; animation: fadeIn 0.5s ease; }
+        .panel.active { display: block; }
+        @keyframes fadeIn { from { opacity:0; transform:translateY(16px); } to { opacity:1; transform:translateY(0); } }
+        .panel-card { background: var(--mc-card); border: 1px solid var(--mc-card-border); border-radius: var(--radius); padding: 40px; margin-bottom: 24px; }
+        .panel-title { font-size: 28px; font-weight: 800; letter-spacing: -1px; margin-bottom: 8px; }
+        .panel-subtitle { color: var(--mc-text-dim); font-size: 15px; margin-bottom: 32px; }
+
+        /* ── Detected Country Banner ── */
+        .detected-country {
+            display: inline-flex; align-items: center; gap: 10px; padding: 8px 16px 8px 10px;
+            margin-bottom: 20px; background: linear-gradient(135deg, rgba(255,255,255,0.04), rgba(255,255,255,0.02));
+            border: 1px solid rgba(255,255,255,0.07); border-radius: 100px;
+            backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+            transition: all 0.25s ease;
+        }
+        .detected-country:hover { border-color: rgba(255,95,0,0.25); background: linear-gradient(135deg, rgba(255,95,0,0.06), rgba(255,255,255,0.03)); }
+        .detected-flag {
+            font-size: 18px; line-height: 1; width: 32px; height: 32px;
+            display: flex; align-items: center; justify-content: center;
+            background: rgba(255,255,255,0.06); border-radius: 50%;
+        }
+        .detected-info { flex: 1; display: flex; align-items: center; gap: 6px; }
+        .detected-label { font-size: 11px; color: var(--mc-text-dim); font-weight: 500; letter-spacing: 0.02em; }
+        .detected-name { font-size: 13px; font-weight: 600; color: var(--mc-text); }
+        .detected-dot {
+            width: 6px; height: 6px; border-radius: 50%; background: var(--mc-green);
+            display: inline-block; margin-right: 2px; animation: pulse-dot 2s ease-in-out infinite;
+        }
+        @keyframes pulse-dot { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.4; transform: scale(0.7); } }
+        .change-country-btn {
+            padding: 4px 12px; border-radius: 100px; background: transparent;
+            border: 1px solid rgba(255,255,255,0.1); color: var(--mc-text-dim); font-size: 11px;
+            font-weight: 500; font-family: inherit; cursor: pointer; transition: var(--transition);
+            letter-spacing: 0.02em;
+        }
+        .change-country-btn:hover { background: rgba(255,95,0,0.1); border-color: var(--mc-orange); color: var(--mc-orange); }
+
+        /* ── Agentic Demo Modal ── */
+        .agentic-overlay {
+            display: none; position: fixed; inset: 0; z-index: 300;
+            background: rgba(0,0,0,0.7); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+            align-items: center; justify-content: center;
+        }
+        .agentic-overlay.open { display: flex; }
+        .agentic-modal {
+            background: var(--mc-card); border: 1px solid rgba(255,255,255,0.1); border-radius: var(--radius);
+            padding: 36px 32px; max-width: 640px; width: 92%; max-height: 85vh; overflow-y: auto;
+            box-shadow: 0 40px 80px rgba(0,0,0,0.6);
+        }
+        .agentic-modal::-webkit-scrollbar { width: 5px; }
+        .agentic-modal::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); border-radius: 10px; }
+        .agentic-modal-title { font-size: 22px; font-weight: 800; margin-bottom: 6px; }
+        .agentic-modal-subtitle { color: var(--mc-text-dim); font-size: 14px; margin-bottom: 24px; line-height: 1.5; }
+        .agentic-step { display: flex; gap: 14px; margin-bottom: 20px; }
+        .agentic-step-num {
+            width: 28px; height: 28px; border-radius: 50%; flex-shrink: 0;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 12px; font-weight: 700;
+            background: linear-gradient(135deg, var(--mc-red), var(--mc-orange)); color: #fff;
+        }
+        .agentic-step-body { flex: 1; }
+        .agentic-step-title { font-size: 14px; font-weight: 700; margin-bottom: 3px; }
+        .agentic-step-desc { font-size: 13px; color: var(--mc-text-dim); line-height: 1.5; }
+        .agentic-step-tag {
+            display: inline-block; margin-top: 6px; padding: 2px 8px; border-radius: 100px;
+            font-size: 10px; font-weight: 600; letter-spacing: 0.03em;
+            background: rgba(255,95,0,0.1); color: var(--mc-orange); border: 1px solid rgba(255,95,0,0.2);
+        }
+        .agentic-divider { height: 1px; background: rgba(255,255,255,0.06); margin: 24px 0; }
+        .agentic-footer { font-size: 12px; color: var(--mc-text-dim); line-height: 1.6; text-align: center; }
+        .agentic-footer em { color: var(--mc-orange); font-style: normal; font-weight: 600; }
+        .agentic-close {
+            display: block; margin: 20px auto 0; padding: 10px 28px; border-radius: 100px;
+            background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1);
+            color: var(--mc-text); font-size: 13px; font-weight: 600; font-family: inherit;
+            cursor: pointer; transition: var(--transition);
+        }
+        .agentic-close:hover { background: rgba(255,255,255,0.1); }
+        /* ── Agentic Modal Tabs ── */
+        .agentic-tabs { display: flex; gap: 0; margin-bottom: 24px; border-bottom: 1px solid rgba(255,255,255,0.08); }
+        .agentic-tab {
+            flex: 1; padding: 10px 0; text-align: center; font-size: 13px; font-weight: 600;
+            color: var(--mc-text-dim); cursor: pointer; border-bottom: 2px solid transparent;
+            transition: var(--transition); background: none; border-top: none; border-left: none; border-right: none;
+            font-family: inherit;
+        }
+        .agentic-tab:hover { color: var(--mc-text); }
+        .agentic-tab.active { color: var(--mc-orange); border-bottom-color: var(--mc-orange); }
+        .agentic-tab-pane { display: none; }
+        .agentic-tab-pane.active { display: block; }
+        .agentic-arch-img { width: 100%; border-radius: 12px; border: 1px solid rgba(255,255,255,0.08); }
+
+        /* ── Search Progress Modal ── */
+        .search-overlay {
+            display: none; position: fixed; inset: 0; z-index: 250;
+            background: rgba(0,0,0,0.65); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+            align-items: center; justify-content: center;
+        }
+        .search-overlay.open { display: flex; }
+        .search-modal {
+            background: var(--mc-card); border: 1px solid rgba(255,255,255,0.1); border-radius: var(--radius);
+            padding: 36px 32px; max-width: 480px; width: 90%; text-align: center;
+            box-shadow: 0 40px 80px rgba(0,0,0,0.5);
+        }
+        .search-modal .spinner { margin: 0 auto 20px; width: 40px; height: 40px; }
+        .search-modal-title { font-size: 18px; font-weight: 800; margin-bottom: 8px; }
+        .search-modal-subtitle { font-size: 13px; color: var(--mc-text-dim); margin-bottom: 20px; }
+        .search-criteria-pills { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
+        .search-pill {
+            display: inline-flex; align-items: center; gap: 5px;
+            padding: 5px 12px; border-radius: 100px; font-size: 11px; font-weight: 600;
+            background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08);
+            color: var(--mc-text);
+        }
+        .search-pill-label { color: var(--mc-text-dim); font-weight: 500; }
+        .search-pill-val { color: var(--mc-orange); }
+
+        /* ── Apply Progress Modal ── */
+        .apply-overlay {
+            display: none; position: fixed; inset: 0; z-index: 260;
+            background: rgba(0,0,0,0.7); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+            align-items: center; justify-content: center;
+        }
+        .apply-overlay.open { display: flex; }
+        .apply-modal {
+            background: var(--mc-card); border: 1px solid rgba(255,255,255,0.1); border-radius: var(--radius);
+            padding: 36px 32px; max-width: 460px; width: 90%;
+            box-shadow: 0 40px 80px rgba(0,0,0,0.5);
+        }
+        .apply-modal-title { font-size: 18px; font-weight: 800; margin-bottom: 6px; text-align: center; }
+        .apply-modal-card-name { font-size: 13px; color: var(--mc-orange); font-weight: 600; text-align: center; margin-bottom: 24px; }
+        .apply-step-row {
+            display: flex; align-items: center; gap: 12px; padding: 10px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.04);
+            opacity: 0.25; transition: opacity 0.4s ease;
+        }
+        .apply-step-row.active { opacity: 1; }
+        .apply-step-row.done { opacity: 0.6; }
+        .apply-step-icon {
+            width: 28px; height: 28px; border-radius: 50%; flex-shrink: 0;
+            display: flex; align-items: center; justify-content: center;
+            background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1);
+            font-size: 13px; transition: all 0.4s ease;
+        }
+        .apply-step-row.active .apply-step-icon { background: rgba(255,95,0,0.15); border-color: var(--mc-orange); }
+        .apply-step-row.done .apply-step-icon { background: rgba(52,211,153,0.15); border-color: var(--mc-green); }
+        .apply-step-text { flex: 1; font-size: 13px; font-weight: 600; }
+        .apply-step-row.active .apply-step-text { color: var(--mc-text); }
+        .apply-step-row.done .apply-step-text { color: var(--mc-text-dim); text-decoration: line-through; text-decoration-color: rgba(255,255,255,0.15); }
+        .apply-step-spinner {
+            width: 16px; height: 16px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.1);
+            border-top-color: var(--mc-orange); animation: spin 0.8s linear infinite;
+            display: none;
+        }
+        .apply-step-row.active .apply-step-spinner { display: block; }
+        .apply-step-check { display: none; color: var(--mc-green); font-size: 14px; font-weight: 700; }
+        .apply-step-row.done .apply-step-check { display: block; }
+
+        /* ── Country Modal Overlay ── */
+        .country-overlay {
+            display: none; position: fixed; inset: 0; z-index: 200;
+            background: rgba(0,0,0,0.6); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+            align-items: center; justify-content: center;
+        }
+        .country-overlay.open { display: flex; }
+        .country-modal {
+            background: var(--mc-card); border: 1px solid rgba(255,255,255,0.1); border-radius: var(--radius);
+            padding: 32px; max-width: 680px; width: 90%; max-height: 80vh; overflow-y: auto;
+            box-shadow: 0 40px 80px rgba(0,0,0,0.5);
+        }
+        .country-modal-title { font-size: 22px; font-weight: 800; margin-bottom: 8px; }
+        .country-modal-subtitle { color: var(--mc-text-dim); font-size: 14px; margin-bottom: 20px; }
+        .country-search-input {
+            width: 100%; padding: 14px 18px; background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(255,255,255,0.1); border-radius: var(--radius-sm);
+            color: var(--mc-text); font-size: 15px; font-family: inherit; margin-bottom: 20px;
+        }
+        .country-search-input:focus { outline: none; border-color: var(--mc-accent); }
+        .country-search-input::placeholder { color: var(--mc-text-dim); }
+        .country-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 12px; }
+        .country-card {
+            padding: 16px; background: rgba(255,255,255,0.02); border: 2px solid rgba(255,255,255,0.06);
+            border-radius: var(--radius-sm); text-align: center; cursor: pointer; transition: var(--transition);
+        }
+        .country-card:hover { border-color: rgba(255,95,0,0.3); background: rgba(255,95,0,0.04); transform: translateY(-2px); }
+        .country-card.selected { border-color: var(--mc-orange); background: rgba(255,95,0,0.08); box-shadow: 0 0 30px rgba(255,95,0,0.1); }
+        .country-flag { font-size: 32px; margin-bottom: 6px; }
+        .country-name { font-size: 13px; font-weight: 600; }
+
+        /* ── Card Type Selector ── */
+        .card-type-selector { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 8px; }
+        .card-type-option {
+            padding: 20px; background: rgba(255,255,255,0.02); border: 2px solid rgba(255,255,255,0.06);
+            border-radius: var(--radius-sm); cursor: pointer; transition: var(--transition); text-align: center;
+        }
+        .card-type-option:hover { border-color: rgba(255,95,0,0.3); background: rgba(255,95,0,0.03); transform: translateY(-2px); }
+        .card-type-option.selected { border-color: var(--mc-orange); background: rgba(255,95,0,0.08); box-shadow: 0 0 30px rgba(255,95,0,0.08); }
+        .card-type-icon { margin-bottom: 8px; display: flex; align-items: center; justify-content: center; height: 36px; color: var(--mc-text); }
+        .card-type-icon svg { width: 32px; height: 32px; }
+        .card-type-name { font-size: 16px; font-weight: 700; margin-bottom: 6px; }
+        .card-type-desc { font-size: 12px; color: var(--mc-text-dim); line-height: 1.5; }
+
+        /* ── Timing Selector ── */
+        .timing-selector { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 8px; }
+        .timing-option {
+            padding: 20px; background: rgba(255,255,255,0.02); border: 2px solid rgba(255,255,255,0.06);
+            border-radius: var(--radius-sm); cursor: pointer; transition: var(--transition); text-align: center;
+        }
+        .timing-option:hover { border-color: rgba(255,95,0,0.3); background: rgba(255,95,0,0.03); transform: translateY(-2px); }
+        .timing-option.selected { border-color: var(--mc-accent); background: rgba(255,95,0,0.08); box-shadow: 0 0 30px rgba(255,95,0,0.08); }
+        .timing-icon { margin-bottom: 8px; display: flex; align-items: center; justify-content: center; height: 36px; color: var(--mc-text); }
+        .timing-icon svg { width: 32px; height: 32px; }
+        .timing-name { font-size: 16px; font-weight: 700; margin-bottom: 4px; }
+        .timing-desc { font-size: 12px; color: var(--mc-text-dim); line-height: 1.5; }
+
+        /* ── Spending Analysis ── */
+        .spending-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 14px; }
+        .spending-item { display: flex; align-items: center; gap: 14px; padding: 16px; background: rgba(255,255,255,0.02); border: 1px solid var(--mc-card-border); border-radius: var(--radius-sm); }
+        .spending-icon { display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; color: var(--mc-text); flex-shrink: 0; }
+        .spending-icon svg { width: 22px; height: 22px; }
+        .spending-name { font-size: 13px; color: var(--mc-text-dim); }
+        .spending-amount { font-size: 18px; font-weight: 700; }
+        .spending-bar-container { flex: 1; min-width: 0; }
+        .spending-bar { height: 6px; background: rgba(255,255,255,0.06); border-radius: 3px; margin-top: 6px; overflow: hidden; }
+        .spending-bar-fill { height: 100%; border-radius: 3px; background: linear-gradient(90deg, var(--mc-orange), var(--mc-yellow)); transition: width 1s ease; width: 0; }
+
+        /* ── Stats ── */
+        .stats-row { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 14px; margin-top: 24px; }
+        .stat-box { padding: 18px; background: rgba(255,255,255,0.02); border: 1px solid var(--mc-card-border); border-radius: var(--radius-sm); text-align: center; }
+        .stat-value { font-size: 28px; font-weight: 800; background: linear-gradient(135deg, var(--mc-orange), var(--mc-yellow)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+        .stat-label { font-size: 12px; color: var(--mc-text-dim); margin-top: 4px; font-weight: 500; }
+
+        /* ── Tags ── */
+        .tags-container { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 16px; }
+        .tag { padding: 8px 18px; border-radius: 100px; font-size: 13px; font-weight: 600; border: 1px solid; }
+        .tag-interest { background: rgba(255,95,0,0.1); border-color: rgba(255,95,0,0.2); color: var(--mc-accent); }
+        .tag-lifestyle { background: rgba(52,211,153,0.1); border-color: rgba(52,211,153,0.2); color: var(--mc-green); }
+
+        /* ── Criteria ── */
+        .criteria-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 20px; }
+        .criteria-item {
+            display: flex; flex-direction: column; gap: 10px;
+            padding: 20px 22px; border-radius: var(--radius);
+            background: rgba(255,255,255,0.025); border: 1px solid rgba(255,255,255,0.06);
+            transition: var(--transition);
+        }
+        .criteria-item:hover { border-color: rgba(255,255,255,0.1); background: rgba(255,255,255,0.035); }
+        .criteria-header { display: flex; align-items: center; gap: 10px; }
+        .criteria-icon {
+            width: 32px; height: 32px; border-radius: 8px;
+            background: linear-gradient(135deg, rgba(255,95,0,0.12), rgba(247,158,27,0.08));
+            display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+            color: var(--mc-orange);
+        }
+        .criteria-icon svg { width: 16px; height: 16px; }
+        .criteria-label { font-size: 13px; font-weight: 700; color: var(--mc-text); letter-spacing: -0.1px; }
+        .criteria-input {
+            padding: 11px 16px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 8px; color: var(--mc-text); font-size: 14px; font-family: inherit; transition: var(--transition);
+        }
+        .criteria-input:focus { outline: none; border-color: var(--mc-accent); box-shadow: 0 0 0 3px rgba(255,95,0,0.12); }
+        select.criteria-input {
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%238888a8' stroke-width='2' fill='none'/%3E%3C/svg%3E");
+            background-repeat: no-repeat; background-position: right 14px center; padding-right: 36px; cursor: pointer;
+        }
+        select.criteria-input option { background: var(--mc-card); color: var(--mc-text); }
+        .criteria-rationale {
+            display: flex; align-items: flex-start; gap: 6px;
+            font-size: 11px; color: rgba(52,211,153,0.85); line-height: 1.45;
+            padding: 8px 10px; border-radius: 6px;
+            background: rgba(52,211,153,0.04); border: 1px solid rgba(52,211,153,0.08);
+        }
+        .criteria-rationale-icon { flex-shrink: 0; font-style: normal; }
+
+        /* ── Buttons ── */
+        .btn {
+            display: inline-flex; align-items: center; justify-content: center; gap: 10px;
+            padding: 14px 32px; border-radius: 12px; font-size: 15px; font-weight: 700;
+            font-family: inherit; border: none; cursor: pointer; transition: var(--transition); letter-spacing: -0.2px;
+        }
+        .btn-primary { background: linear-gradient(135deg, var(--mc-red), var(--mc-orange)); color: #fff; box-shadow: 0 4px 20px rgba(235,0,27,0.3); }
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(235,0,27,0.4); }
+        .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+        .btn-secondary { background: rgba(255,255,255,0.06); color: var(--mc-text); border: 1px solid rgba(255,255,255,0.1); }
+        .btn-secondary:hover { background: rgba(255,255,255,0.1); }
+        .btn-ghost { background: transparent; color: var(--mc-text-dim); padding: 14px 20px; }
+        .btn-ghost:hover { color: var(--mc-text); }
+        .btn-row { display: flex; gap: 12px; margin-top: 32px; flex-wrap: wrap; }
+
+        /* ── Agent Feed ── */
+        .agent-feed-toggle { margin-bottom: 24px; }
+        .agent-feed-toggle label { display: flex; align-items: center; gap: 12px; cursor: pointer; font-size: 14px; font-weight: 600; color: var(--mc-text-dim); }
+        .toggle-switch { width: 44px; height: 24px; background: rgba(255,255,255,0.1); border-radius: 12px; position: relative; transition: var(--transition); flex-shrink: 0; }
+        .toggle-switch::after { content: ''; width: 18px; height: 18px; border-radius: 50%; background: #fff; position: absolute; top: 3px; left: 3px; transition: var(--transition); }
+        .toggle-input { display: none; }
+        .toggle-input:checked + .toggle-switch { background: var(--mc-accent); }
+        .toggle-input:checked + .toggle-switch::after { transform: translateX(20px); }
+        .agent-feed { max-height: 0; overflow: hidden; transition: max-height 0.5s ease; }
+        .agent-feed.open { max-height: 2000px; }
+        .feed-container {
+            background: rgba(0,0,0,0.3); border: 1px solid rgba(255,95,0,0.15);
+            border-radius: var(--radius-sm); padding: 20px;
+            font-family: 'SF Mono','Fira Code','Consolas',monospace; font-size: 13px;
+            line-height: 1.8; max-height: 350px; overflow-y: auto; margin-bottom: 24px;
+        }
+        .feed-line { opacity: 0; animation: feedIn 0.3s ease forwards; color: var(--mc-text-dim); }
+        .feed-line .timestamp { color: rgba(255,255,255,0.2); margin-right: 8px; font-size: 11px; }
+        @keyframes feedIn { from { opacity:0; transform:translateX(-8px); } to { opacity:1; transform:translateX(0); } }
+
+        /* ── Card Results ── */
+        .results-container { padding-bottom: 80px; }
+        .results-header { text-align: center; margin-bottom: 40px; }
+        .results-header h2 { font-size: 32px; font-weight: 800; letter-spacing: -1px; }
+        .card-results-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 24px; }
+        .result-card {
+            background: var(--mc-card); border: 1px solid var(--mc-card-border); border-radius: var(--radius);
+            overflow: hidden; transition: var(--transition); position: relative;
+        }
+        .result-card:hover { transform: translateY(-4px); box-shadow: 0 20px 60px rgba(0,0,0,0.4); border-color: rgba(255,255,255,0.1); }
+        .result-card.top-pick::before {
+            content: '\2605  TOP MATCH'; position: absolute; top: 16px; right: 16px;
+            background: linear-gradient(135deg, var(--mc-orange), var(--mc-yellow)); color: #000;
+            font-size: 10px; font-weight: 800; padding: 4px 12px; border-radius: 100px; letter-spacing: 1px; z-index: 2;
+        }
+        .card-visual { height: 200px; padding: 28px; position: relative; overflow: hidden; display: flex; flex-direction: column; justify-content: space-between; }
+        .card-visual::before {
+            content: ''; position: absolute; inset: 0; opacity: 0.15;
+            background-image: url("data:image/svg+xml,%3Csvg width='200' height='200' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='100' cy='100' r='80' fill='none' stroke='white' stroke-width='0.5'/%3E%3Ccircle cx='100' cy='100' r='60' fill='none' stroke='white' stroke-width='0.5'/%3E%3Ccircle cx='100' cy='100' r='40' fill='none' stroke='white' stroke-width='0.5'/%3E%3C/svg%3E");
+            background-position: right -40px top -40px; background-repeat: no-repeat;
+        }
+        .card-chip { width: 42px; height: 30px; border-radius: 6px; background: linear-gradient(135deg, #e8d5a3, #c9a84c); position: relative; }
+        .card-chip::after { content: ''; position: absolute; inset: 4px; border: 1px solid rgba(0,0,0,0.15); border-radius: 3px; }
+        .card-bottom { display: flex; justify-content: space-between; align-items: flex-end; }
+        .card-number { font-size: 14px; font-weight: 500; letter-spacing: 3px; color: rgba(255,255,255,0.7); }
+        .card-mc-logo { display: flex; align-items: center; }
+        .card-mc-logo .mini-circle { width: 24px; height: 24px; border-radius: 50%; }
+        .card-mc-logo .mini-circle.red { background: var(--mc-red); }
+        .card-mc-logo .mini-circle.yellow { background: var(--mc-yellow); margin-left: -8px; mix-blend-mode: screen; }
+        .card-tier-badge { font-size: 10px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: rgba(255,255,255,0.6); margin-top: 4px; }
+        .card-name-on-visual { font-size: 16px; font-weight: 700; color: rgba(255,255,255,0.9); }
+        .card-details { padding: 24px; }
+        .card-detail-name { font-size: 18px; font-weight: 700; margin-bottom: 4px; }
+        .card-detail-tier { font-size: 12px; font-weight: 600; color: var(--mc-orange); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 16px; }
+        .score-section { display: flex; align-items: center; gap: 20px; padding: 16px; background: rgba(255,255,255,0.02); border-radius: var(--radius-sm); margin-bottom: 16px; }
+        .score-ring { width: 72px; height: 72px; position: relative; flex-shrink: 0; }
+        .score-ring svg { transform: rotate(-90deg); width: 72px; height: 72px; }
+        .score-ring .bg { stroke: rgba(255,255,255,0.06); }
+        .score-ring .fg { transition: stroke-dashoffset 1.5s ease; }
+        .score-value { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: 800; }
+        .score-info { flex: 1; min-width: 0; }
+        .score-label { font-size: 11px; color: var(--mc-text-dim); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+        .score-detail { font-size: 13px; margin-top: 4px; }
+        .card-attrs { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
+        .card-attr { padding: 10px; background: rgba(255,255,255,0.02); border-radius: 8px; }
+        .card-attr-label { font-size: 10px; color: var(--mc-text-dim); text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600; }
+        .card-attr-value { font-size: 14px; font-weight: 700; margin-top: 2px; }
+        .fit-reasons { list-style: none; margin-top: 12px; }
+        .fit-reasons li { font-size: 13px; padding: 6px 0; color: var(--mc-text-dim); display: flex; align-items: flex-start; gap: 8px; }
+        .fit-reasons li::before { content: '\2713'; color: var(--mc-green); font-weight: 700; flex-shrink: 0; }
+        .mc-benefits { margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--mc-card-border); }
+        .mc-benefits-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--mc-orange); margin-bottom: 8px; }
+        .benefit-item { display: flex; align-items: center; gap: 8px; padding: 6px 0; font-size: 12px; color: var(--mc-text-dim); }
+        .benefit-icon { display: inline-flex; align-items: center; justify-content: center; width: 16px; height: 16px; flex-shrink: 0; color: var(--mc-text-dim); }
+        .benefit-icon svg { width: 14px; height: 14px; }
+        .card-apply-btn {
+            display: block; width: 100%; padding: 14px;
+            background: linear-gradient(135deg, var(--mc-red), var(--mc-orange)); color: #fff;
+            border: none; border-radius: 10px; font-size: 14px; font-weight: 700;
+            font-family: inherit; cursor: pointer; margin-top: 16px; transition: var(--transition);
+        }
+        .card-apply-btn:hover { opacity: 0.9; transform: translateY(-1px); }
+
+        /* ── Modern Tooltip ── */
+        .tooltip-wrap { position: relative; display: inline-block; }
+        .tooltip-wrap .tooltip-bubble {
+            visibility: hidden; opacity: 0; position: absolute; bottom: calc(100% + 10px); left: 50%; transform: translateX(-50%) translateY(4px);
+            width: 260px; padding: 10px 14px; border-radius: 10px;
+            background: rgba(30,30,30,0.95); border: 1px solid rgba(255,255,255,0.08);
+            backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+            box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+            font-size: 12px; font-weight: 500; line-height: 1.5; color: var(--mc-text-dim); text-align: center;
+            transition: opacity 0.25s ease, transform 0.25s ease, visibility 0.25s;
+            pointer-events: none; z-index: 50;
+        }
+        .tooltip-wrap .tooltip-bubble::after {
+            content: ''; position: absolute; top: 100%; left: 50%; transform: translateX(-50%);
+            border: 6px solid transparent; border-top-color: rgba(30,30,30,0.95);
+        }
+        .tooltip-wrap:hover .tooltip-bubble {
+            visibility: visible; opacity: 1; transform: translateX(-50%) translateY(0);
+        }
+
+        /* ── Connecting ── */
+        .connecting-anim { display: flex; flex-direction: column; align-items: center; padding: 40px; gap: 20px; }
+        .spinner { width: 48px; height: 48px; border-radius: 50%; border: 3px solid rgba(255,255,255,0.1); border-top-color: var(--mc-orange); animation: spin 0.8s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .connecting-text { font-size: 15px; font-weight: 600; color: var(--mc-text-dim); transition: opacity 0.3s ease; }
+        .connecting-text.fade { opacity: 0; }
+        .section-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; color: var(--mc-text-dim); margin-bottom: 16px; }
+
+        /* ── iPhone Wallet ── */
+        .wallet-scene {
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            padding: 60px 20px 40px; min-height: 70vh;
+        }
+        .iphone-frame {
+            width: 300px; height: 600px; background: #000; border-radius: 48px;
+            border: 4px solid #333; position: relative; overflow: hidden;
+            box-shadow: 0 40px 100px rgba(0,0,0,0.6), 0 0 0 2px #1a1a1a, inset 0 0 0 2px #2a2a2a;
+        }
+        .iphone-notch {
+            width: 120px; height: 28px; background: #000; border-radius: 0 0 18px 18px;
+            position: absolute; top: 0; left: 50%; transform: translateX(-50%); z-index: 10;
+        }
+        .iphone-screen {
+            position: absolute; inset: 8px; border-radius: 40px; overflow: hidden;
+            background: linear-gradient(180deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            display: flex; flex-direction: column;
+        }
+        .wallet-header { padding: 50px 20px 16px; text-align: center; }
+        .wallet-label { font-size: 11px; color: rgba(255,255,255,0.5); font-weight: 600; text-transform: uppercase; letter-spacing: 1px; }
+        .wallet-title { font-size: 20px; font-weight: 800; color: #fff; margin-top: 4px; }
+        .wallet-cards-area { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 0 20px; position: relative; }
+        /* ── Intro Panel ── */
+        .intro-input-wrap { max-width: 640px; margin: 0 auto; }
+        .intro-label { font-size: 18px; font-weight: 700; margin-bottom: 12px; letter-spacing: -0.3px; }
+        .intro-textarea {
+            width: 100%; min-height: 80px; padding: 18px 20px;
+            background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1);
+            border-radius: var(--radius-sm); color: var(--mc-text); font-size: 16px;
+            font-family: inherit; resize: vertical; line-height: 1.6; transition: var(--transition);
+        }
+        .intro-textarea:focus { outline: none; border-color: var(--mc-accent); box-shadow: 0 0 0 3px rgba(255,95,0,0.15); }
+        .intro-textarea::placeholder { color: var(--mc-text-dim); }
+        .intro-hint {
+            margin-top: 12px; font-size: 13px; color: var(--mc-text-dim); line-height: 1.6;
+            font-style: italic;
+        }
+
+        .wallet-card-wrapper {
+            width: 260px; height: 174px; perspective: 800px;
+            transform: translateY(400px) scale(0.8); opacity: 0;
+        }
+        .wallet-card-wrapper.animate { animation: cardFlyIn 1s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
+        .wallet-card-wrapper.flip .wallet-card-inner { transform: rotateY(180deg); }
+        .wallet-card-wrapper.flip .wallet-card { visibility: hidden; }
+        .wallet-card-inner {
+            width: 100%; height: 100%; position: relative;
+            transform-style: preserve-3d; transition: transform 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .wallet-card, .wallet-card-back {
+            width: 100%; height: 100%; border-radius: 16px; padding: 18px;
+            position: absolute; top: 0; left: 0; backface-visibility: hidden; -webkit-backface-visibility: hidden;
+            display: flex; flex-direction: column; justify-content: space-between;
+            overflow: hidden;
+        }
+        .wallet-card::before, .wallet-card-back::before {
+            content: ''; position: absolute; inset: 0; opacity: 0.12;
+            background-image: url("data:image/svg+xml,%3Csvg width='200' height='200' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='100' cy='100' r='80' fill='none' stroke='white' stroke-width='0.5'/%3E%3Ccircle cx='100' cy='100' r='60' fill='none' stroke='white' stroke-width='0.5'/%3E%3C/svg%3E");
+            background-position: right -30px top -30px; background-repeat: no-repeat;
+        }
+        .wallet-card-back { transform: rotateY(180deg); justify-content: flex-start; gap: 0; padding: 14px 16px; }
+        .wallet-card-back-header {
+            display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; z-index: 1;
+        }
+        .wallet-card-back-title { font-size: 9px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: rgba(255,255,255,0.5); }
+        .wallet-card-back-mc { display: flex; align-items: center; }
+        .wallet-card-back-mc .wc-circle { width: 14px; height: 14px; border-radius: 50%; }
+        .wallet-card-back-mc .wc-circle.red { background: var(--mc-red); }
+        .wallet-card-back-mc .wc-circle.yellow { background: var(--mc-yellow); margin-left: -5px; mix-blend-mode: screen; }
+        .wallet-feature-list { list-style: none; z-index: 1; display: flex; flex-direction: column; gap: 5px; }
+        .wallet-feature-item {
+            font-size: 9px; font-weight: 600; color: rgba(255,255,255,0.9);
+            padding: 5px 10px; border-radius: 8px;
+            background: linear-gradient(135deg, rgba(255,255,255,0.08), rgba(255,255,255,0.03));
+            border: 1px solid rgba(255,255,255,0.06);
+            display: flex; align-items: center; gap: 8px;
+            opacity: 0; transform: translateY(8px);
+            letter-spacing: 0.2px; line-height: 1.3;
+        }
+        .wallet-feature-item.show { animation: featureSlideIn 0.45s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards; }
+        .wallet-feature-icon {
+            width: 18px; height: 18px; flex-shrink: 0; display: flex; align-items: center; justify-content: center;
+            border-radius: 5px; background: rgba(255,255,255,0.1);
+        }
+        .wallet-feature-icon svg { width: 10px; height: 10px; }
+        @keyframes featureSlideIn {
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .wallet-card-name { font-size: 13px; font-weight: 700; color: rgba(255,255,255,0.9); z-index: 1; }
+        .wallet-card-tier { font-size: 9px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: rgba(255,255,255,0.5); z-index: 1; }
+        .wallet-card-bottom { display: flex; justify-content: space-between; align-items: flex-end; z-index: 1; }
+        .wallet-card-num { font-size: 11px; letter-spacing: 2px; color: rgba(255,255,255,0.6); }
+        .wallet-card-mc { display: flex; align-items: center; }
+        .wallet-card-mc .wc-circle { width: 18px; height: 18px; border-radius: 50%; }
+        .wallet-card-mc .wc-circle.red { background: var(--mc-red); }
+        .wallet-card-mc .wc-circle.yellow { background: var(--mc-yellow); margin-left: -6px; mix-blend-mode: screen; }
+        @keyframes cardFlyIn {
+            0% { transform: translateY(400px) scale(0.8) rotateX(20deg); opacity: 0; }
+            60% { opacity: 1; }
+            100% { transform: translateY(0) scale(1) rotateX(0); opacity: 1; }
+        }
+        .wallet-checkmark { margin-top: 24px; opacity: 0; }
+        .wallet-checkmark.animate { animation: checkFadeIn 0.6s ease forwards; }
+        .wallet-checkmark svg { width: 48px; height: 48px; }
+        .checkmark-circle { stroke: var(--mc-green); stroke-width: 2; fill: none; stroke-dasharray: 166; stroke-dashoffset: 166; }
+        .checkmark-circle.animate { animation: checkStroke 0.6s ease forwards; }
+        .checkmark-check { stroke: var(--mc-green); stroke-width: 3; fill: none; stroke-dasharray: 48; stroke-dashoffset: 48; stroke-linecap: round; stroke-linejoin: round; }
+        .checkmark-check.animate { animation: checkStroke 0.3s ease forwards; }
+        @keyframes checkStroke { to { stroke-dashoffset: 0; } }
+        @keyframes checkFadeIn { to { opacity: 1; } }
+        .wallet-added-text {
+            text-align: center; padding: 8px 16px; font-size: 12px; font-weight: 600;
+            color: var(--mc-green); opacity: 0;
+        }
+        .wallet-added-text.animate { animation: checkFadeIn 0.6s ease forwards; }
+        .wallet-delivery-msg {
+            text-align: center; padding: 2px 14px; font-size: 8.5px; font-weight: 500;
+            color: rgba(255,255,255,0.4); line-height: 1.4; opacity: 0;
+            max-width: 200px; margin: 6px auto 0;
+        }
+        .wallet-delivery-msg.animate { animation: checkFadeIn 0.6s ease forwards; }
+        .wallet-home-indicator { width: 120px; height: 5px; background: rgba(255,255,255,0.3); border-radius: 3px; margin: 10px auto; }
+        .wallet-message {
+            text-align: center; max-width: 500px; margin-top: 48px;
+            font-size: 22px; font-weight: 700; line-height: 1.5; opacity: 0; letter-spacing: -0.5px;
+        }
+        .wallet-message.animate { animation: walletMsgIn 0.8s ease forwards; }
+        .wallet-message em {
+            font-style: normal; font-weight: 800;
+            background: linear-gradient(135deg, var(--mc-orange), var(--mc-yellow));
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+        }
+        @keyframes walletMsgIn { from { opacity:0; transform:translateY(20px); } to { opacity:1; transform:translateY(0); } }
+        .wallet-actions { margin-top: 32px; opacity: 0; }
+        .wallet-actions.animate { animation: walletMsgIn 0.8s ease forwards; }
+
+        /* ── Bank Login Overlay ── */
+        .bank-login-overlay {
+            display: none; position: fixed; inset: 0; z-index: 300;
+            background: rgba(6,6,14,0.92); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
+            align-items: center; justify-content: center; flex-direction: column;
+        }
+        .bank-login-overlay.open { display: flex; }
+        .bank-login-box {
+            background: var(--mc-card); border: 1px solid rgba(255,255,255,0.08);
+            border-radius: var(--radius); padding: 48px 56px; max-width: 520px; width: 90%;
+            text-align: center; box-shadow: 0 40px 100px rgba(0,0,0,0.5);
+        }
+        .bank-login-icon { margin-bottom: 20px; color: var(--mc-text); display: flex; align-items: center; justify-content: center; }
+        .bank-login-title { font-size: 22px; font-weight: 800; margin-bottom: 8px; letter-spacing: -0.5px; }
+        .bank-login-sub { font-size: 14px; color: var(--mc-text-dim); margin-bottom: 32px; }
+        .bank-progress-track {
+            width: 100%; height: 6px; background: rgba(255,255,255,0.06);
+            border-radius: 3px; overflow: hidden; margin-bottom: 24px;
+        }
+        .bank-progress-fill {
+            height: 100%; width: 0; border-radius: 3px;
+            background: linear-gradient(90deg, var(--mc-orange), var(--mc-yellow));
+            transition: width 1.8s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .bank-status-msg {
+            font-size: 15px; font-weight: 600; color: var(--mc-text);
+            min-height: 24px; transition: opacity 0.3s ease;
+        }
+        .bank-status-msg.fade { opacity: 0; }
+
+        /* ── Responsive ── */
+        @media (max-width: 768px) {
+            .panel-card { padding: 24px; }
+            .card-results-grid { grid-template-columns: 1fr; }
+            .card-type-selector { grid-template-columns: 1fr; }
+            .timing-selector { grid-template-columns: 1fr; }
+            .steps-bar { gap: 0; }
+            .step-connector { width: 8px; }
+            .step-item { padding: 4px 8px; font-size: 10px; }
+            .step-item span { display: none; }
+            .step-num { width: 18px; height: 18px; font-size: 9px; }
+            .hero { padding: 50px 0 40px; }
+            .iphone-frame { width: 260px; height: 520px; }
+            .wallet-card-wrapper { width: 220px; height: 148px; }
+            .wallet-card, .wallet-card-back { padding: 12px; }
+            .wallet-feature-item { font-size: 8px; padding: 3px 6px; gap: 5px; }
+            .wallet-feature-icon { width: 14px; height: 14px; font-size: 8px; border-radius: 4px; }
+        }
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }
+        .hidden { display: none !important; }
+        .mb-24 { margin-bottom: 24px; }
+        .mt-24 { margin-top: 24px; }
+    </style>
+</head>
+<body>
+    <div class="bg-grid"></div>
+
+    <!-- Bank Login Overlay -->
+    <div class="bank-login-overlay" id="bankLoginOverlay">
+        <div class="bank-login-box">
+            <div class="bank-login-icon"><svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><path d="M5 21V11M9 21V11M15 21V11M19 21V11"/><path d="M12 3L2 9h20z"/></svg></div>
+            <div class="bank-login-title">Connecting To Your Bank</div>
+            <div class="bank-login-sub">Securely analyzing your financial profile via Open Banking</div>
+            <div style="margin: 14px 0 6px; text-align: left; width: 100%;">
+                <label style="display:block; font-size: 11px; font-weight: 600; color: var(--mc-text-dim); margin-bottom: 6px; letter-spacing: 0.03em;">Using active consent token</label>
+                <input type="text" readonly id="consentTokenField" style="width:100%; padding: 9px 12px; background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; font-family: 'Courier New', Courier, monospace; font-size: 11px; color: var(--mc-orange); letter-spacing: 0.04em; outline: none; box-sizing: border-box; word-break: break-all;" value="a3c7f1e2b9d04658ac12ef7b83d6a0419f2c5e78b7a91d3c6f0e82459a1b7d4c30f6e28a9d514b7ce03f8a62d19c74b0e5f83a">
+            </div>
+            <div class="bank-progress-track">
+                <div class="bank-progress-fill" id="bankProgressFill"></div>
+            </div>
+            <div class="bank-status-msg" id="bankStatusMsg"></div>
+        </div>
+    </div>
+
+    <!-- Country Change Modal -->
+    <div class="country-overlay" id="countryOverlay">
+        <div class="country-modal">
+            <div class="country-modal-title">&#127758; Select Your Country</div>
+            <div class="country-modal-subtitle">Choose where you'd like to search for cards</div>
+            <input type="text" class="country-search-input" id="countrySearchInput" placeholder="Search countries..." oninput="filterCountries(this.value)">
+            <div class="country-grid" id="countryGrid"></div>
+        </div>
+    </div>
+
+    <!-- Header -->
+    <header>
+        <div class="container">
+            <div class="header-top">
+                <div class="logo">
+                    <div class="mc-circles">
+                        <div class="circle red"></div>
+                        <div class="circle yellow"></div>
+                    </div>
+                    <div class="logo-text">Find a <span>Card</span></div>
+                </div>
+                <div class="header-badge">
+                    <div class="pulse-dot"></div>
+                    AGENTIC MODE
+                </div>
+            </div>
+            <div class="steps-bar" id="stepsBar">
+                <div class="step-item active" data-step="1" onclick="goToStep(1)"><div class="step-num">1</div><span>Describe</span></div>
+                <div class="step-connector"></div>
+                <div class="step-item" data-step="2" onclick="goToStep(2)"><div class="step-num">2</div><span>Requirements</span></div>
+                <div class="step-connector"></div>
+                <div class="step-item" data-step="3" onclick="goToStep(3)"><div class="step-num">3</div><span>About You</span></div>
+                <div class="step-connector"></div>
+                <div class="step-item" data-step="4" onclick="goToStep(4)"><div class="step-num">4</div><span>Smart Criteria</span></div>
+                <div class="step-connector"></div>
+                <div class="step-item" data-step="5" onclick="goToStep(5)"><div class="step-num">5</div><span>Results</span></div>
+                <div class="step-connector"></div>
+                <div class="step-item" data-step="6" onclick="goToStep(6)"><div class="step-num">6</div><span>Wallet</span></div>
+            </div>
+        </div>
+    </header>
+
+    <div class="container" style="padding-top: 36px;">
+
+        <!-- Panel 1: Describe -->
+        <div class="panel active" id="panel1">
+            <div class="panel-card">
+                <div class="panel-title">Tell Us What You're Looking For</div>
+                <div class="panel-subtitle">Describe the card you want in your own words, and our agent will take it from there.</div>
+                <div class="intro-input-wrap">
+                    <textarea class="intro-textarea" id="userDescribe" placeholder="e.g. I want a credit card now, with travel rewards and no annual fee, or a balance transfer from existing card..." onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();goToStep(2);}"></textarea>
+                </div>
+                <div class="btn-row" style="justify-content:center;">
+                    <button class="btn btn-primary" onclick="goToStep(2)">Start &#8594;</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Panel 2: Basic Requirements -->
+        <div class="panel" id="panel2">
+            <div class="panel-card">
+                <div class="panel-title">Basic Requirements</div>
+                <div class="panel-subtitle">Your agent has detected your location. Set your preferences below.</div>
+
+                <div class="detected-country" id="detectedCountry">
+                    <div class="detected-flag" id="detectedFlag">&#127482;&#127480;</div>
+                    <div class="detected-info">
+                        <div class="detected-label" id="detectedLabel"><span class="detected-dot"></span> Defaulting to your home country</div>
+                        <div class="detected-name" id="detectedName">United States</div>
+                    </div>
+                    <button class="change-country-btn" onclick="openCountryModal()">Change</button>
+                </div>
+
+                <div class="section-label" style="margin-bottom: 12px;">What type of card are you looking for?</div>
+                <div class="card-type-selector" id="cardTypeSelector">
+                    <div class="card-type-option selected" data-type="credit" onclick="selectCardType('credit', this)">
+                        <div class="card-type-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2.5"/><path d="M2 10h20"/><path d="M6 15h3"/><path d="M13 15h2"/></svg></div>
+                        <div class="card-type-name">Credit Card</div>
+                        <div class="card-type-desc">Borrow &amp; repay monthly. Earn rewards, build credit, and access premium benefits.</div>
+                    </div>
+                    <div class="card-type-option" data-type="debit" onclick="selectCardType('debit', this)">
+                        <div class="card-type-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><path d="M5 21V11M9 21V11M15 21V11M19 21V11"/><path d="M12 3L2 9h20z"/></svg></div>
+                        <div class="card-type-name">Debit Card</div>
+                        <div class="card-type-desc">Spend from your bank account. No borrowing, no interest &mdash; simple and immediate.</div>
+                    </div>
+                    <div class="card-type-option" data-type="prepaid" onclick="selectCardType('prepaid', this)">
+                        <div class="card-type-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h13a1 1 0 0 1 1 1v3"/><path d="M3 5v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-5a2 2 0 0 0-2-2h-4a2 2 0 0 0 0 4h4"/></svg></div>
+                        <div class="card-type-name">Prepaid Card</div>
+                        <div class="card-type-desc">Load money and spend. No credit check &mdash; great for budgeting and gifting.</div>
+                    </div>
+                </div>
+
+                <div class="section-label" style="margin-top: 28px; margin-bottom: 12px;">When do you need it?</div>
+                <div class="timing-selector">
+                    <div class="timing-option selected" data-timing="now" onclick="selectTiming('now', this)">
+                        <div class="timing-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg></div>
+                        <div class="timing-name">Want It Now</div>
+                        <div class="timing-desc">Instant digital issuance. Card appears in your wallet immediately.</div>
+                    </div>
+                    <div class="timing-option" data-timing="wait" onclick="selectTiming('wait', this)">
+                        <div class="timing-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><path d="M3.27 6.96L12 12.01l8.73-5.05"/><path d="M12 22.08V12"/></svg></div>
+                        <div class="timing-name">Can Wait</div>
+                        <div class="timing-desc">Physical card mailed. More options, including metal and premium cards.</div>
+                    </div>
+                </div>
+
+                <div class="btn-row">
+                    <button class="btn btn-ghost" onclick="goToStep(1)">&#8592; Back</button>
+                    <span class="tooltip-wrap">
+                        <button class="btn btn-secondary" style="border-color:var(--mc-orange);color:var(--mc-orange);" onclick="startBankLogin()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:4px"><path d="M3 21h18"/><path d="M5 21V11M9 21V11M15 21V11M19 21V11"/><path d="M12 3L2 9h20z"/></svg> Connect To Bank (optional)</button>
+                        <div class="tooltip-bubble">This will allow us to better personalize recommendations and increase your approval probability</div>
+                    </span>
+                    <button class="btn btn-primary" onclick="goToStep(4)">Continue &#8594;</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Panel 3: Spend Habits -->
+        <div class="panel" id="panel3">
+            <div class="panel-card" id="bankConnecting">
+                <div class="connecting-anim">
+                    <div class="spinner"></div>
+                    <div class="connecting-text">Analyzing your spend habits...</div>
+                    <div class="connecting-text" style="font-size:12px; color: rgba(255,255,255,0.3);">Encrypting with TLS 1.3 &bull; OAuth 2.0 &bull; Scanning all linked accounts</div>
+                </div>
+            </div>
+            <div class="panel-card hidden" id="spendingPanel">
+                <div class="panel-title">Your Spending Profile</div>
+                <div class="panel-subtitle">We've analyzed your transaction history to understand your spending patterns.</div>
+                <div class="section-label">Monthly Spending by Category</div>
+                <div class="spending-grid" id="spendingGrid"></div>
+                <div class="stats-row" id="statsRow"></div>
+
+                <div id="lifestyleSection" class="hidden" style="margin-top:28px;">
+                    <div class="panel-title" style="font-size:18px;">Your Lifestyle Profile</div>
+                    <div class="panel-subtitle" style="font-size:13px;">Based on your spending patterns, your agent identified these interests and lifestyle signals.</div>
+                    <div class="section-label">Interests</div>
+                    <div class="tags-container" id="interestTags"></div>
+                    <div class="section-label mt-24">Lifestyle Tags</div>
+                    <div class="tags-container" id="lifestyleTags"></div>
+                </div>
+
+                <div class="btn-row">
+                    <button class="btn btn-ghost" onclick="goToStep(2)">&#8592; Back</button>
+                    <button class="btn btn-primary" onclick="goToStep(4)">Continue &#8594;</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Panel 4: Smart Search -->
+        <div class="panel" id="panel4">
+            <div class="panel-card">
+                <div class="panel-title">Smart Search Criteria</div>
+                <div class="panel-subtitle">Your agent has intelligently pre-filled criteria based on your financial and social profile. Adjust as needed.</div>
+                <div class="criteria-grid" id="criteriaGrid"></div>
+                <div class="btn-row">
+                    <button class="btn btn-ghost" onclick="goToStep(3)">&#8592; Back</button>
+                    <button class="btn btn-primary" id="btnSearch" onclick="runSearch()">&#128269; Find My Perfect Card</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Panel 5: Results -->
+        <div class="panel" id="panel5">
+            <div class="results-container">
+                <div class="results-header">
+                    <h2>Your Top Card Matches</h2>
+                    <p class="panel-subtitle" style="margin: 8px auto 0; max-width: 500px;">Ranked by your agent based on fit score, expected value, and approval probability.</p>
+                </div>
+                <div class="card-results-grid" id="resultsGrid"></div>
+                <div class="btn-row" style="justify-content: center; margin-top: 48px;">
+                    <button class="btn btn-ghost" onclick="goToStep(4)">&#8592; Modify Search</button>
+                    <button class="btn btn-secondary" onclick="goToStep(1)">Start Over</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Panel 6: Apple Wallet -->
+        <div class="panel" id="panel6">
+            <div class="wallet-scene">
+                <div class="iphone-frame">
+                    <div class="iphone-notch"></div>
+                    <div class="iphone-screen">
+                        <div class="wallet-header">
+                            <div class="wallet-label">Apple Wallet</div>
+                            <div class="wallet-title">Card Added</div>
+                        </div>
+                        <div class="wallet-cards-area">
+                            <div class="wallet-card-wrapper" id="walletCardWrapper" onclick="document.getElementById('walletCardWrapper').classList.toggle('flip')" style="cursor:pointer">
+                                <div class="wallet-card-inner" id="walletCardInner">
+                                    <div class="wallet-card" id="walletCard">
+                                        <div>
+                                            <div class="wallet-card-name" id="walletCardName"></div>
+                                            <div class="wallet-card-tier" id="walletCardTier"></div>
+                                        </div>
+                                        <div class="wallet-card-bottom">
+                                            <div class="wallet-card-num" id="walletCardNum"></div>
+                                            <div class="wallet-card-mc">
+                                                <div class="wc-circle red"></div>
+                                                <div class="wc-circle yellow"></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="wallet-card-back" id="walletCardBack">
+                                        <div class="wallet-card-back-header">
+                                            <div class="wallet-card-back-title">Your Benefits</div>
+                                            <div class="wallet-card-back-mc"><div class="wc-circle red"></div><div class="wc-circle yellow"></div></div>
+                                        </div>
+                                        <ul class="wallet-feature-list" id="walletFeatureList"></ul>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="wallet-checkmark" id="walletCheckmark">
+                                <svg viewBox="0 0 52 52">
+                                    <circle class="checkmark-circle" id="checkCircle" cx="26" cy="26" r="25"/>
+                                    <path class="checkmark-check" id="checkPath" d="M14.1 27.2l7.1 7.2 16.7-16.8"/>
+                                </svg>
+                            </div>
+                            <div class="wallet-added-text" id="walletAddedText">Ready to use with Apple Pay</div>
+                            <div class="wallet-delivery-msg" id="walletDeliveryMsg">Your new card will arrive in 2 days&rsquo; time to your address at 2000 Purchase Street.</div>
+                        </div>
+                        <div class="wallet-home-indicator"></div>
+                    </div>
+                </div>
+                <div class="wallet-message" id="walletMessage">
+                    Your Mastercard is now active, now go create some <em>Priceless</em> experiences!
+                </div>
+                <div class="wallet-actions" id="walletActions">
+                    <div class="btn-row" style="justify-content: center;">
+                        <button class="btn btn-ghost" onclick="goToStep(5)">&#8592; Back to Results</button>
+                        <button class="btn btn-secondary" onclick="goToStep(1)">Start Over</button>
+                        <button class="btn btn-secondary" style="border-color:var(--mc-orange);color:var(--mc-orange);" onclick="openAgenticModal()">&#9889; Full Agentic Mode</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Apply Progress Modal -->
+    <div class="apply-overlay" id="applyOverlay">
+        <div class="apply-modal">
+            <div class="apply-modal-title">Applying for your card&hellip;</div>
+            <div class="apply-modal-card-name" id="applyCardName"></div>
+            <div id="applySteps">
+                <div class="apply-step-row" id="applyStep1">
+                    <div class="apply-step-icon">1</div>
+                    <div class="apply-step-text">Checking issuer for direct API&hellip;</div>
+                    <div class="apply-step-spinner"></div>
+                    <div class="apply-step-check">&#10003;</div>
+                </div>
+                <div class="apply-step-row" id="applyStep2">
+                    <div class="apply-step-icon">2</div>
+                    <div class="apply-step-text">Bank does not have API &mdash; applying through website</div>
+                    <div class="apply-step-spinner"></div>
+                    <div class="apply-step-check">&#10003;</div>
+                </div>
+                <div class="apply-step-row" id="applyStep3">
+                    <div class="apply-step-icon">3</div>
+                    <div class="apply-step-text">Form-filling application with your details&hellip;</div>
+                    <div class="apply-step-spinner"></div>
+                    <div class="apply-step-check">&#10003;</div>
+                </div>
+                <div class="apply-step-row" id="applyStep4">
+                    <div class="apply-step-icon">4</div>
+                    <div class="apply-step-text">Waiting for response&hellip;</div>
+                    <div class="apply-step-spinner"></div>
+                    <div class="apply-step-check">&#10003;</div>
+                </div>
+                <div class="apply-step-row" id="applyStep5">
+                    <div class="apply-step-icon">&#9889;</div>
+                    <div class="apply-step-text">Application Successful!</div>
+                    <div class="apply-step-spinner"></div>
+                    <div class="apply-step-check">&#10003;</div>
+                </div>
+                <div class="apply-step-row" id="applyStep6">
+                    <div class="apply-step-icon">&#128241;</div>
+                    <div class="apply-step-text">Provisioning card to your wallet&hellip;</div>
+                    <div class="apply-step-spinner"></div>
+                    <div class="apply-step-check">&#10003;</div>
+                </div>
+            </div>
+            <button class="btn btn-primary" id="applyContinueBtn" style="display:none; margin: 20px auto 0; padding: 10px 32px;" onclick="applyContinue()">Continue &#8594;</button>
+        </div>
+    </div>
+
+    <!-- Search Progress Modal -->
+    <div class="search-overlay" id="searchOverlay">
+        <div class="search-modal">
+            <div class="spinner"></div>
+            <div class="search-modal-title">Now finding the right card for you&hellip;</div>
+            <div class="search-modal-subtitle">Your agent is searching across issuers using these criteria:</div>
+            <div class="search-criteria-pills" id="searchPills"></div>
+        </div>
+    </div>
+
+    <!-- Agentic Mode Demo Modal -->
+    <div class="agentic-overlay" id="agenticOverlay" onclick="if(event.target===this)closeAgenticModal()">
+        <div class="agentic-modal">
+            <div class="agentic-modal-title">&#9889; Full Agentic Mode</div>
+            <div class="agentic-modal-subtitle">In a fully autonomous agentic flow, the AI agent executes every step below without any human intervention &mdash; from understanding your needs to getting a card in your wallet.</div>
+
+            <div class="agentic-tabs">
+                <button class="agentic-tab active" onclick="switchAgenticTab(0)">Agent Steps</button>
+                <button class="agentic-tab" onclick="switchAgenticTab(1)">Architecture</button>
+            </div>
+
+            <div class="agentic-tab-pane active" id="agenticPane0">
+            <div class="agentic-step">
+                <div class="agentic-step-num">1</div>
+                <div class="agentic-step-body">
+                    <div class="agentic-step-title">Natural Language Understanding</div>
+                    <div class="agentic-step-desc">The agent parses your free-text description using an LLM to extract intent, preferences, constraints, and urgency signals (e.g. &ldquo;travel rewards, no annual fee, need it soon&rdquo;).</div>
+                    <span class="agentic-step-tag">LLM &bull; Intent Extraction</span>
+                </div>
+            </div>
+
+            <div class="agentic-step">
+                <div class="agentic-step-num">2</div>
+                <div class="agentic-step-body">
+                    <div class="agentic-step-title">Location Detection</div>
+                    <div class="agentic-step-desc">Automatically determines your country, currency, and regulatory context using geolocation to tailor card options to your region.</div>
+                    <span class="agentic-step-tag">Geolocation</span>
+                </div>
+            </div>
+
+            <div class="agentic-step">
+                <div class="agentic-step-num">3</div>
+                <div class="agentic-step-body">
+                    <div class="agentic-step-title">Open Banking &amp; Financial Analysis</div>
+                    <div class="agentic-step-desc">Securely connects to your bank accounts via Open Banking APIs. Analyzes transaction history, spending patterns, income, and credit utilization to build a comprehensive financial profile.</div>
+                    <span class="agentic-step-tag">Mastercard Global Open Finance</span>
+                </div>
+            </div>
+
+            <div class="agentic-step">
+                <div class="agentic-step-num">4</div>
+                <div class="agentic-step-body">
+                    <div class="agentic-step-title">Lifestyle &amp; Interest Profiling</div>
+                    <div class="agentic-step-desc">Derives lifestyle signals from your financial data &mdash; travel frequency, dining habits, subscription patterns, cross-border spending &mdash; to understand what benefits matter most to you.</div>
+                    <span class="agentic-step-tag">Mastercard Global Open Finance &bull; Behavioral Analytics</span>
+                </div>
+            </div>
+
+            <div class="agentic-step">
+                <div class="agentic-step-num">5</div>
+                <div class="agentic-step-body">
+                    <div class="agentic-step-title">Intelligent Card Matching</div>
+                    <div class="agentic-step-desc">Cross-references your profile against the full Mastercard product catalog. Scores each card on fit, expected annual value, approval probability, and benefit alignment. Ranks results and explains the reasoning.</div>
+                    <span class="agentic-step-tag">Mastercard Find A Card Database &bull; Scoring Engine &bull; RAG</span>
+                </div>
+            </div>
+
+            <div class="agentic-step">
+                <div class="agentic-step-num">6</div>
+                <div class="agentic-step-body">
+                    <div class="agentic-step-title">Autonomous Application &amp; Approval</div>
+                    <div class="agentic-step-desc">With your consent, the agent submits the application on your behalf &mdash; pre-filling all fields from your verified profile. Receives instant decisioning from the issuer and handles any follow-up steps.</div>
+                    <span class="agentic-step-tag">Form Fill &bull; API Application &bull; Instant Decisioning</span>
+                </div>
+            </div>
+
+            <div class="agentic-step">
+                <div class="agentic-step-num">7</div>
+                <div class="agentic-step-body">
+                    <div class="agentic-step-title">Digital Wallet Provisioning</div>
+                    <div class="agentic-step-desc">Once approved, the agent provisions your new Mastercard directly into Apple Pay, Google Pay, or your preferred digital wallet &mdash; ready to use instantly, before any physical card arrives.</div>
+                    <span class="agentic-step-tag">MDES &bull; Apple Pay &bull; Push Provisioning</span>
+                </div>
+            </div>
+
+            <div class="agentic-divider"></div>
+            <div class="agentic-footer">
+                From <em>&ldquo;I want a card&rdquo;</em> to <em>card in your wallet</em> &mdash; fully autonomous, in under 60 seconds.<br>
+                Powered by Mastercard APIs, Open Banking, and agentic AI orchestration.
+            </div>
+            </div><!-- end tab pane 0 -->
+
+            <div class="agentic-tab-pane" id="agenticPane1">
+                <img class="agentic-arch-img" src="/static/agentic-architecture.png" alt="Agentic Architecture Diagram">
+            </div>
+
+            <button class="agentic-close" onclick="closeAgenticModal()">Close</button>
+        </div>
+    </div>
+
+    <script>
+    var IC = {
+        shield: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>',
+        lock: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>',
+        globe: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>',
+        plane: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.8 19.2L16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8l-8.2-1.8c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.2c.4-.3.6-.7.5-1.2z"/></svg>',
+        tag: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><circle cx="7" cy="7" r="1"/></svg>',
+        shieldCheck: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/></svg>',
+        box: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>',
+        sofa: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 9V6a2 2 0 0 0-2-2H7a2 2 0 0 0-2 2v3"/><path d="M3 16h18v2a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-2z"/><path d="M3 11a2 2 0 0 1 2-2h1v7H3v-5z"/><path d="M21 11a2 2 0 0 0-2-2h-1v7h3v-5z"/></svg>',
+        hotel: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><path d="M5 21V7l8-4v18"/><path d="M19 21V11l-6-4"/><path d="M9 9v.01M9 12v.01M9 15v.01M9 18v.01"/></svg>',
+        sparkles: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.5 5.5L19 10l-5.5 1.5L12 17l-1.5-5.5L5 10l5.5-1.5z"/><path d="M19 15l.5 1.5L21 17l-1.5.5L19 19l-.5-1.5L17 17l1.5-.5z"/></svg>',
+        headphones: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 18v-6a9 9 0 0 1 18 0v6"/><path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3v5z"/><path d="M3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3v5z"/></svg>',
+        briefcase: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/></svg>',
+        phone: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2"/><path d="M12 18h.01"/></svg>',
+        ticket: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v2z"/><path d="M13 5v2m0 4v2m0 4v2"/></svg>',
+        leaf: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 8C8 10 5.9 16.17 3.82 21.34l1.89.66.95-2.3c.48.17.98.3 1.34.3C18 20 21 12 21 3c-4.5 0-9 1-12 5"/><path d="M6 15s2-2 6-2"/></svg>',
+        star: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"/></svg>',
+        offerTag: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><circle cx="7" cy="7" r="1"/></svg>',
+        card: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/><path d="M12 15h4"/></svg>',
+        calendar: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M3 10h18"/><path d="M8 2v4M16 2v4"/></svg>',
+        cart: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>',
+        coffee: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><path d="M6 1v3M10 1v3M14 1v3"/></svg>',
+        bag: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>',
+        film: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>',
+        car: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 16H9m10 0h3v-3.15a1 1 0 0 0-.84-.99L16 11l-2.7-3.6a1 1 0 0 0-.8-.4H5.24a2 2 0 0 0-1.8 1.1l-.8 1.63A6 6 0 0 0 2 12.42V16h2"/><circle cx="6.5" cy="16.5" r="2.5"/><circle cx="16.5" cy="16.5" r="2.5"/></svg>',
+        bulb: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6M10 22h4"/><path d="M12 2a7 7 0 0 0-4 12.7V17h8v-2.3A7 7 0 0 0 12 2z"/></svg>'
+    };
+    var currentStep = 1;
+    var selectedCountry = 'US';
+    var selectedCardType = 'credit';
+    var selectedTiming = 'now';
+    var spendingData = null;
+    var socialData = null;
+    var bankConnected = false;
+    var searchResults = null;
+    var allCountries = [];
+
+    document.addEventListener('DOMContentLoaded', function() {
+        loadCountries();
+        setupFeedToggles();
+    });
+
+    function goToStep(step) {
+        currentStep = step;
+        document.querySelectorAll('.panel').forEach(function(p) { p.classList.remove('active'); });
+        document.getElementById('panel' + step).classList.add('active');
+        if (step <= 6) updateStepsBar();
+        window.scrollTo({ top: (step === 6 || step === 5) ? 0 : 200, behavior: 'smooth' });
+        if (step === 4) buildSmartCriteria();
+    }
+
+    function updateStepsBar() {
+        document.querySelectorAll('.step-item').forEach(function(item) {
+            var s = parseInt(item.dataset.step);
+            item.classList.remove('active', 'completed');
+            if (s === currentStep) item.classList.add('active');
+            else if (s < currentStep) item.classList.add('completed');
+        });
+    }
+
+    function selectCardType(type, el) {
+        selectedCardType = type;
+        document.querySelectorAll('.card-type-option').forEach(function(o) { o.classList.remove('selected'); });
+        el.classList.add('selected');
+    }
+
+    function selectTiming(timing, el) {
+        selectedTiming = timing;
+        document.querySelectorAll('.timing-option').forEach(function(o) { o.classList.remove('selected'); });
+        el.classList.add('selected');
+    }
+
+    function loadCountries() {
+        fetch('/api/countries').then(function(r) { return r.json(); }).then(function(data) {
+            allCountries = data;
+            renderCountryGrid(allCountries);
+            var us = allCountries.find(function(c) { return c.code === 'US'; });
+            if (us) document.getElementById('detectedFlag').textContent = us.flag;
+        });
+    }
+
+    function openAgenticModal() { document.getElementById('agenticOverlay').classList.add('open'); }
+    function closeAgenticModal() { document.getElementById('agenticOverlay').classList.remove('open'); }
+    function switchAgenticTab(idx) {
+        document.querySelectorAll('.agentic-tab').forEach((t, i) => t.classList.toggle('active', i === idx));
+        document.querySelectorAll('.agentic-tab-pane').forEach((p, i) => p.classList.toggle('active', i === idx));
+    }
+
+    function renderCountryGrid(countries) {
+        var grid = document.getElementById('countryGrid');
+        grid.innerHTML = countries.map(function(c) {
+            return '<div class="country-card ' + (c.code === selectedCountry ? 'selected' : '') +
+                '" data-code="' + c.code + '" onclick="selectCountryFromModal(\'' + c.code + '\',\'' + c.flag + '\',\'' + c.name + '\')">' +
+                '<div class="country-flag">' + c.flag + '</div>' +
+                '<div class="country-name">' + c.name + '</div></div>';
+        }).join('');
+    }
+
+    function openCountryModal() {
+        document.getElementById('countryOverlay').classList.add('open');
+        document.getElementById('countrySearchInput').value = '';
+        renderCountryGrid(allCountries);
+        setTimeout(function() { document.getElementById('countrySearchInput').focus(); }, 100);
+    }
+
+    function closeCountryModal() {
+        document.getElementById('countryOverlay').classList.remove('open');
+    }
+
+    function filterCountries(query) {
+        var q = query.toLowerCase();
+        var filtered = allCountries.filter(function(c) { return c.name.toLowerCase().indexOf(q) !== -1 || c.code.toLowerCase().indexOf(q) !== -1; });
+        renderCountryGrid(filtered);
+    }
+
+    function selectCountryFromModal(code, flag, name) {
+        selectedCountry = code;
+        document.getElementById('detectedFlag').textContent = flag;
+        document.getElementById('detectedName').textContent = name;
+        document.getElementById('detectedLabel').textContent = '\ud83d\udccd Selected country';
+        closeCountryModal();
+    }
+
+    document.addEventListener('click', function(e) {
+        if (e.target.id === 'countryOverlay') closeCountryModal();
+    });
+
+    function connectBank() {
+        bankConnected = true;
+        var connecting = document.getElementById('bankConnecting');
+        var panel = document.getElementById('spendingPanel');
+        connecting.classList.remove('hidden');
+        panel.classList.add('hidden');
+        sleep(2200).then(function() {
+            return fetch('/api/connect-bank', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ country: selectedCountry })
+            });
+        }).then(function(r) { return r.json(); }).then(function(data) {
+            spendingData = data;
+            var grid = document.getElementById('spendingGrid');
+            var maxSpend = Math.max.apply(null, data.spending_categories.map(function(c) { return c.monthly_avg; }));
+            var spendIcons = {'Groceries':IC.cart,'Dining':IC.coffee,'Travel':IC.plane,'Shopping':IC.bag,'Entertainment':IC.film,'Transport':IC.car,'Subscriptions':IC.phone,'Utilities':IC.bulb};
+            grid.innerHTML = data.spending_categories.map(function(c) {
+                return '<div class="spending-item"><div class="spending-icon">' + (spendIcons[c.name]||c.icon) + '</div>' +
+                    '<div class="spending-bar-container"><div style="display:flex;justify-content:space-between;align-items:baseline;">' +
+                    '<div class="spending-name">' + c.name + '</div><div class="spending-amount">' + getCurrency() + c.monthly_avg + '</div></div>' +
+                    '<div class="spending-bar"><div class="spending-bar-fill" data-width="' + (c.monthly_avg / maxSpend * 100) + '"></div></div></div></div>';
+            }).join('');
+
+            var statsRow = document.getElementById('statsRow');
+            statsRow.innerHTML =
+                '<div class="stat-box"><div class="stat-value">' + getCurrency() + data.monthly_total.toLocaleString() + '</div><div class="stat-label">Monthly Spend</div></div>' +
+                '<div class="stat-box"><div class="stat-value">' + data.credit_score_band + '</div><div class="stat-label">Credit Score Band</div></div>' +
+                '<div class="stat-box"><div class="stat-value">' + data.travel_frequency + 'x</div><div class="stat-label">Trips / Year</div></div>' +
+                '<div class="stat-box"><div class="stat-value">' + data.cross_border_percentage + '%</div><div class="stat-label">Cross-border Spend</div></div>' +
+                '<div class="stat-box"><div class="stat-value">' + data.existing_cards + '</div><div class="stat-label">Existing Cards</div></div>' +
+                '<div class="stat-box"><div class="stat-value">' + data.transactions_analyzed + '</div><div class="stat-label">Transactions Analyzed</div></div>';
+
+            connecting.classList.add('hidden');
+            panel.classList.remove('hidden');
+
+            // Populate lifestyle from financial data
+            if (data.interests && data.lifestyle_tags) {
+                socialData = { interests: data.interests, lifestyle_tags: data.lifestyle_tags };
+                document.getElementById('interestTags').innerHTML =
+                    data.interests.map(function(i) { return '<div class="tag tag-interest">' + i + '</div>'; }).join('');
+                document.getElementById('lifestyleTags').innerHTML =
+                    data.lifestyle_tags.map(function(t) { return '<div class="tag tag-lifestyle">' + t + '</div>'; }).join('');
+                document.getElementById('lifestyleSection').classList.remove('hidden');
+            }
+
+            requestAnimationFrame(function() {
+                document.querySelectorAll('.spending-bar-fill').forEach(function(bar) { bar.style.width = bar.dataset.width + '%'; });
+            });
+        });
+    }
+
+    function buildSmartCriteria() {
+        var travel = spendingData ? spendingData.travel_frequency : 3;
+        var crossBorder = spendingData ? spendingData.cross_border_percentage : 15;
+        var monthlySpend = spendingData ? spendingData.monthly_total : 2000;
+        var creditScore = spendingData ? spendingData.credit_score_band : 'Good';
+        var diningSpend = spendingData ? spendingData.dining_spend : 150;
+        var interests = socialData ? socialData.interests : [];
+        var lifestyles = socialData ? socialData.lifestyle_tags : [];
+        var cur = getCurrency();
+
+        var tierDef, tierRat;
+        if (creditScore === 'Excellent' && monthlySpend > 2500) {
+            tierDef = 'world_elite'; tierRat = 'Your ' + creditScore + ' credit and ' + cur + monthlySpend + '/mo spend qualify for World Elite';
+        } else if (creditScore === 'Very Good' || monthlySpend > 1800) {
+            tierDef = 'world'; tierRat = 'Your ' + creditScore + ' credit and spending make World tier a strong fit';
+        } else {
+            tierDef = 'all'; tierRat = 'Showing all tiers to maximize options given your credit profile';
+        }
+
+        var feeDef, feeRat;
+        if (monthlySpend > 3000) {
+            feeDef = 'mid'; feeRat = 'At ' + cur + monthlySpend + '/mo, premium fee cards break even in rewards';
+        } else if (monthlySpend > 1500) {
+            feeDef = 'low'; feeRat = 'Your ' + cur + monthlySpend + '/mo spend can offset a modest annual fee';
+        } else {
+            feeDef = 'none'; feeRat = 'A no-fee card maximizes value at your current spend level';
+        }
+
+        var rewDef, rewRat;
+        if (travel > 5) {
+            rewDef = 'travel'; rewRat = 'You travel ' + travel + 'x/year \u2014 travel rewards deliver the highest return';
+        } else if (diningSpend > 250) {
+            rewDef = 'dining'; rewRat = 'Your ' + cur + diningSpend + '/mo dining makes dining rewards very lucrative';
+        } else if (interests.indexOf('Travel') !== -1) {
+            rewDef = 'points'; rewRat = 'Travel is one of your interests \u2014 points/miles align with your lifestyle';
+        } else {
+            rewDef = 'any'; rewRat = 'Best overall value to optimize across all spending categories';
+        }
+
+        var fxDef = crossBorder > 15 ? 'zero' : 'any';
+        var fxSave = Math.round(monthlySpend * crossBorder / 100 * 0.03);
+        var fxRat = crossBorder > 15 ? 'With ' + crossBorder + '% cross-border, zero FX saves ' + cur + fxSave + '/mo' : 'Low cross-border spend \u2014 FX fees won\'t impact you much';
+
+        var walDef = selectedTiming === 'now' ? 'yes' : 'any';
+        var walRat = selectedTiming === 'now' ? 'Instant issuance needs digital wallet for immediate use' : 'Physical card \u2014 digital wallet is a bonus not a requirement';
+
+        var susDef = (interests.indexOf('Sustainability') !== -1 || lifestyles.indexOf('Eco-Conscious') !== -1) ? 'yes' : 'no';
+        var susRat = susDef === 'yes' ? 'Social profile shows eco-conscious values \u2014 prioritizing sustainable cards' : 'No strong sustainability signals in your profile';
+
+        var critIcons = {
+            critTier: IC.sparkles,
+            critFee: IC.tag,
+            critReward: IC.star,
+            critFX: IC.globe,
+            critWallet: IC.phone,
+            critSustain: IC.leaf
+        };
+
+        var criteria = [
+            { id: 'critTier', label: 'Card Tier', d: tierDef, r: tierRat, opts: [{v:'all',t:'All Tiers'},{v:'standard',t:'Standard'},{v:'world',t:'World'},{v:'world_elite',t:'World Elite'}] },
+            { id: 'critFee', label: 'Annual Fee', d: feeDef, r: feeRat, opts: [{v:'any',t:'Any'},{v:'none',t:'No Fee'},{v:'low',t:'Up to '+cur+'100'},{v:'mid',t:'Up to '+cur+'300'},{v:'high',t:'Up to '+cur+'500'}] },
+            { id: 'critReward', label: 'Reward Type', d: rewDef, r: rewRat, opts: [{v:'any',t:'Best Overall'},{v:'cashback',t:'Cashback'},{v:'points',t:'Points/Miles'},{v:'travel',t:'Travel'},{v:'dining',t:'Dining'}] },
+            { id: 'critFX', label: 'FX Fee', d: fxDef, r: fxRat, opts: [{v:'any',t:'No Preference'},{v:'zero',t:'Zero FX Only'}] },
+            { id: 'critWallet', label: 'Digital Wallet', d: walDef, r: walRat, opts: [{v:'any',t:'No Preference'},{v:'yes',t:'Apple Pay / Google Pay'}] },
+            { id: 'critSustain', label: 'Sustainability', d: susDef, r: susRat, opts: [{v:'no',t:'Not Important'},{v:'nice',t:'Nice to Have'},{v:'yes',t:'Important'}] },
+        ];
+
+        var html = '';
+        for (var i = 0; i < criteria.length; i++) {
+            var c = criteria[i];
+            var optsHtml = '';
+            for (var j = 0; j < c.opts.length; j++) {
+                var o = c.opts[j];
+                optsHtml += '<option value="' + o.v + '"' + (o.v === c.d ? ' selected' : '') + '>' + o.t + '</option>';
+            }
+            var icon = critIcons[c.id] || IC.bulb;
+            html += '<div class="criteria-item">' +
+                '<div class="criteria-header"><div class="criteria-icon">' + icon + '</div><label class="criteria-label">' + c.label + '</label></div>' +
+                '<select class="criteria-input" id="' + c.id + '">' + optsHtml + '</select>' +
+                '<div class="criteria-rationale"><span class="criteria-rationale-icon">\ud83e\udd16</span> ' + c.r + '</div></div>';
+        }
+        document.getElementById('criteriaGrid').innerHTML = html;
+    }
+
+    function setupFeedToggles() {
+    }
+
+    function runAgentFeed(container, phases) {
+        container.innerHTML = '';
+        var phaseIdx = 0;
+        function processPhase() {
+            if (phaseIdx >= phases.length) return Promise.resolve();
+            return fetch('/api/agent-log', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ phase: phases[phaseIdx], country: selectedCountry })
+            }).then(function(r) { return r.json(); }).then(function(messages) {
+                var msgIdx = 0;
+                function showMsg() {
+                    if (msgIdx >= messages.length) { phaseIdx++; return sleep(400).then(processPhase); }
+                    var line = document.createElement('div');
+                    line.className = 'feed-line';
+                    var now = new Date().toLocaleTimeString('en-GB', { hour12: false });
+                    line.innerHTML = '<span class="timestamp">' + now + '</span>' + messages[msgIdx];
+                    container.appendChild(line);
+                    container.scrollTop = container.scrollHeight;
+                    msgIdx++;
+                    return sleep(180 + Math.random() * 220).then(showMsg);
+                }
+                return showMsg();
+            });
+        }
+        return processPhase();
+    }
+
+    function runSearch() {
+        var btn = document.getElementById('btnSearch');
+        btn.disabled = true;
+        btn.innerHTML = '<div class="spinner" style="width:20px;height:20px;border-width:2px;"></div> Agent Searching...';
+
+        // Build criteria summary for progress modal
+        var pills = '';
+        var critEls = document.querySelectorAll('.criteria-card');
+        critEls.forEach(function(el) {
+            var label = el.querySelector('.criteria-label');
+            var sel = el.querySelector('select');
+            if (label && sel) {
+                var opt = sel.options[sel.selectedIndex];
+                pills += '<div class="search-pill"><span class="search-pill-label">' + label.textContent + ':</span><span class="search-pill-val">' + opt.text + '</span></div>';
+            }
+        });
+        document.getElementById('searchPills').innerHTML = pills;
+        document.getElementById('searchOverlay').classList.add('open');
+
+        var p = sleep(1500);
+
+        p.then(function() {
+            return fetch('/api/search-cards', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    country: selectedCountry,
+                    travel_frequency: spendingData ? spendingData.travel_frequency : 3,
+                    dining_spend: spendingData ? spendingData.dining_spend : 150,
+                    interests: socialData ? socialData.interests : [],
+                    credit_score_band: spendingData ? spendingData.credit_score_band : 'Good',
+                    monthly_total: spendingData ? spendingData.monthly_total : 2000,
+                })
+            });
+        }).then(function(r) { return r.json(); }).then(function(data) {
+            searchResults = data;
+            btn.disabled = false;
+            btn.innerHTML = '\ud83d\udd0d Find My Perfect Card';
+            document.getElementById('searchOverlay').classList.remove('open');
+            renderResults();
+            goToStep(5);
+        });
+    }
+
+    function renderResults() {
+        var grid = document.getElementById('resultsGrid');
+        var html = '';
+        for (var i = 0; i < searchResults.length; i++) {
+            var card = searchResults[i];
+            var isTop = (i === 0);
+            var circ = 2 * Math.PI * 30;
+            var off = circ - (card.score / 100) * circ;
+            var sc = card.score >= 85 ? '#34d399' : card.score >= 70 ? '#f59e0b' : '#ef4444';
+            var bens = getMastercardBenefits(card.tier);
+            var bin6 = '5' + String(10000 + Math.floor(Math.random() * 90000));
+            var fxC = card.fx_fee === '0%' ? '#34d399' : '#f59e0b';
+
+            var benH = '';
+            for (var b = 0; b < bens.length; b++) {
+                benH += '<div class="benefit-item" title="' + bens[b].desc + '"><span class="benefit-icon">' + bens[b].icon + '</span><span>' + bens[b].name + '</span></div>';
+            }
+            var reaH = '';
+            for (var r = 0; r < card.fit_reasons.length; r++) {
+                reaH += '<li>' + card.fit_reasons[r] + '</li>';
+            }
+
+            html += '<div class="result-card ' + (isTop ? 'top-pick' : '') + '" style="animation-delay:' + (i * 0.1) + 's">' +
+                '<div class="card-visual" style="background:linear-gradient(135deg,' + card.colors[0] + ',' + card.colors[1] + ')">' +
+                    '<div><div class="card-chip"></div></div>' +
+                    '<div><div class="card-name-on-visual">' + card.name + '</div>' +
+                    '<div class="card-tier-badge">mastercard ' + card.tier.replace('_', ' ') + '</div></div>' +
+                    '<div class="card-bottom"><div class="card-number">' + bin6.substring(0,4) + ' ' + bin6.substring(4) + '\u2022\u2022 \u2022\u2022\u2022\u2022 \u2022\u2022\u2022\u2022</div>' +
+                    '<div class="card-mc-logo"><div class="mini-circle red"></div><div class="mini-circle yellow"></div></div></div>' +
+                '</div>' +
+                '<div class="card-details">' +
+                    '<div class="card-detail-name">' + card.name + '</div>' +
+                    '<div class="card-detail-tier">Mastercard ' + card.tier.replace('_', ' ') + '</div>' +
+                    '<div class="score-section"><div class="score-ring">' +
+                        '<svg viewBox="0 0 72 72"><circle class="bg" cx="36" cy="36" r="30" fill="none" stroke-width="5"/>' +
+                        '<circle class="fg" cx="36" cy="36" r="30" fill="none" stroke="' + sc + '" stroke-width="5" stroke-dasharray="' + circ + '" stroke-dashoffset="' + off + '" stroke-linecap="round"/></svg>' +
+                        '<div class="score-value" style="color:' + sc + '">' + card.score + '</div></div>' +
+                        '<div class="score-info"><div class="score-label">Fit Score</div>' +
+                        '<div class="score-detail" style="color:' + sc + ';font-weight:700">' + card.annual_value_display + ' expected annual value</div>' +
+                        '<div class="score-detail">' + card.approval_probability + '% approval probability' + (bankConnected ? ' <span style="display:inline-block;margin-left:6px;padding:2px 8px;border-radius:100px;font-size:10px;font-weight:600;background:rgba(52,211,153,0.12);color:#34d399;border:1px solid rgba(52,211,153,0.2);">&#8593; Boosted &mdash; bank history linked</span>' : '') + '</div></div></div>' +
+                    '<div class="card-attrs">' +
+                        '<div class="card-attr"><div class="card-attr-label">Annual Fee</div><div class="card-attr-value">' + (card.annual_fee === 0 ? 'Free' : card.currency + card.annual_fee) + '</div></div>' +
+                        '<div class="card-attr"><div class="card-attr-label">APR</div><div class="card-attr-value">' + card.apr_range + '</div></div>' +
+                        '<div class="card-attr"><div class="card-attr-label">Rewards</div><div class="card-attr-value" style="font-size:12px">' + card.cashback + '</div></div>' +
+                        '<div class="card-attr"><div class="card-attr-label">Welcome Bonus</div><div class="card-attr-value" style="font-size:12px">' + card.welcome_bonus + '</div></div>' +
+                        '<div class="card-attr"><div class="card-attr-label">FX Fee</div><div class="card-attr-value" style="color:' + fxC + '">' + card.fx_fee + '</div></div>' +
+                        '<div class="card-attr"><div class="card-attr-label">Break-even</div><div class="card-attr-value">' + (card.breakeven_months === 0 ? 'Instant' : card.breakeven_months + ' months') + '</div></div></div>' +
+                    '<ul class="fit-reasons">' + reaH + '</ul>' +
+                    '<div class="mc-benefits"><div class="mc-benefits-title">\u2605 Mastercard Benefits</div>' + benH + '</div>' +
+                    '<button class="card-apply-btn" onclick="applyForCard(' + i + ')">Apply Instantly via Agent \u2192</button>' +
+                '</div></div>';
+        }
+        grid.innerHTML = html;
+    }
+
+    function applyForCard(cardIdx) {
+        var card = searchResults[cardIdx];
+
+        // Show apply progress modal
+        document.getElementById('applyCardName').textContent = card.name;
+        var overlay = document.getElementById('applyOverlay');
+        var steps = overlay.querySelectorAll('.apply-step-row');
+        steps.forEach(function(s) { s.className = 'apply-step-row'; });
+        overlay.classList.add('open');
+
+        var stepDelay = [0, 1800, 3000, 4800, 7200, 9000];
+        var totalSteps = steps.length;
+
+        function activateStep(idx) {
+            if (idx > 0) steps[idx - 1].className = 'apply-step-row done';
+            if (idx < totalSteps) steps[idx].className = 'apply-step-row active';
+        }
+
+        for (var si = 0; si < totalSteps; si++) {
+            (function(i) {
+                setTimeout(function() { activateStep(i); }, stepDelay[i]);
+            })(si);
+        }
+
+        // After last step completes, mark done and show Continue button
+        setTimeout(function() {
+            steps[totalSteps - 1].className = 'apply-step-row done';
+        }, 10500);
+
+        setTimeout(function() {
+            document.getElementById('applyContinueBtn').style.display = 'block';
+        }, 11000);
+
+        window._applyCard = card;
+    }
+
+    function applyContinue() {
+        document.getElementById('applyContinueBtn').style.display = 'none';
+        document.getElementById('applyOverlay').classList.remove('open');
+        showWalletForCard(window._applyCard);
+    }
+
+    function showWalletForCard(card) {
+        var wrapper = document.getElementById('walletCardWrapper');
+        var wc = document.getElementById('walletCard');
+        var back = document.getElementById('walletCardBack');
+        var bg = 'linear-gradient(135deg,' + card.colors[0] + ',' + card.colors[1] + ')';
+        wc.style.background = bg;
+        back.style.background = bg;
+        document.getElementById('walletCardName').textContent = card.name;
+        document.getElementById('walletCardTier').textContent = 'mastercard ' + card.tier.replace('_', ' ');
+        document.getElementById('walletCardNum').textContent = '\u2022\u2022\u2022\u2022 ' + (1000 + Math.floor(Math.random() * 9000));
+
+        var features = [
+            { icon: IC.star, text: 'Earn Rewards On Every Purchase' },
+            { icon: IC.offerTag, text: 'Get Offers Just For You' },
+            { icon: IC.plane, text: 'Enjoy Access To 1,600 Lounges In 120 Countries' }
+        ];
+        var featureList = document.getElementById('walletFeatureList');
+        featureList.innerHTML = features.map(function(f) {
+            return '<li class="wallet-feature-item"><span class="wallet-feature-icon">' + f.icon + '</span>' + f.text + '</li>';
+        }).join('');
+
+        // Reset animations
+        wrapper.classList.remove('animate', 'flip');
+        document.getElementById('walletCheckmark').classList.remove('animate');
+        document.getElementById('checkCircle').classList.remove('animate');
+        document.getElementById('checkPath').classList.remove('animate');
+        document.getElementById('walletAddedText').classList.remove('animate');
+        document.getElementById('walletMessage').classList.remove('animate');
+        document.getElementById('walletActions').classList.remove('animate');
+        document.getElementById('walletDeliveryMsg').classList.remove('animate');
+        featureList.querySelectorAll('.wallet-feature-item').forEach(function(el) { el.classList.remove('show'); });
+
+        goToStep(6);
+
+        // Card flies in
+        setTimeout(function() { wrapper.classList.add('animate'); }, 100);
+        // Checkmark sequence
+        setTimeout(function() { document.getElementById('walletCheckmark').classList.add('animate'); }, 1600);
+        setTimeout(function() { document.getElementById('checkCircle').classList.add('animate'); }, 1800);
+        setTimeout(function() { document.getElementById('checkPath').classList.add('animate'); }, 2200);
+        setTimeout(function() { document.getElementById('walletAddedText').classList.add('animate'); }, 2500);
+        setTimeout(function() { document.getElementById('walletDeliveryMsg').classList.add('animate'); }, 2900);
+        // Flip card to show back
+        setTimeout(function() { wrapper.classList.add('flip'); }, 3200);
+        // Reveal features one at a time
+        var featureItems = featureList.querySelectorAll('.wallet-feature-item');
+        for (var fi = 0; fi < featureItems.length; fi++) {
+            (function(idx) {
+                setTimeout(function() { featureItems[idx].classList.add('show'); }, 3800 + idx * 500);
+            })(fi);
+        }
+        // Message and actions after features
+        var msgDelay = 3800 + features.length * 500 + 400;
+        setTimeout(function() { document.getElementById('walletMessage').classList.add('animate'); }, msgDelay);
+        setTimeout(function() { document.getElementById('walletActions').classList.add('animate'); }, msgDelay + 500);
+    }
+
+    function getCurrency() {
+        var map = { UK: '\u00A3', US: '$', IE: '\u20AC', DE: '\u20AC', SG: 'S$', AU: 'A$' };
+        return map[selectedCountry] || '$';
+    }
+
+    function getMastercardBenefits(tier) {
+        var benefits = {
+            standard: [
+                { name: 'Zero Liability Protection', icon: IC.shield, desc: 'Not responsible for unauthorized transactions' },
+                { name: 'ID Theft Protection', icon: IC.lock, desc: 'Free identity theft resolution' },
+                { name: 'Global Service 24/7', icon: IC.globe, desc: '24/7 emergency assistance worldwide' }
+            ],
+            world: [
+                { name: 'Travel Rewards Boost', icon: IC.plane, desc: 'Bonus points on travel purchases' },
+                { name: 'Price Protection', icon: IC.tag, desc: 'Refund if price drops' },
+                { name: 'Extended Warranty', icon: IC.shieldCheck, desc: 'Double warranty up to 1 year' },
+                { name: 'Purchase Assurance', icon: IC.box, desc: 'Covers new purchases 120 days' },
+                { name: 'Airport Lounge Access', icon: IC.sofa, desc: '1,000+ lounges worldwide' }
+            ],
+            world_elite: [
+                { name: 'Luxury Hotel Collection', icon: IC.hotel, desc: 'VIP perks at 3,000+ hotels' },
+                { name: 'Priceless Experiences', icon: IC.sparkles, desc: 'Exclusive access to events' },
+                { name: '24/7 Concierge', icon: IC.headphones, desc: 'Dedicated concierge service' },
+                { name: 'Travel Insurance Suite', icon: IC.briefcase, desc: 'Comprehensive travel insurance' },
+                { name: 'Mastercard Travel Pass', icon: IC.ticket, desc: 'Discounted airport experiences' },
+                { name: 'Carbon Tracker', icon: IC.leaf, desc: 'Track your footprint' }
+            ]
+        };
+        return benefits[tier] || benefits.standard;
+    }
+
+    function sleep(ms) { return new Promise(function(resolve) { setTimeout(resolve, ms); }); }
+
+    function startBankLogin() {
+        var overlay = document.getElementById('bankLoginOverlay');
+        var fill = document.getElementById('bankProgressFill');
+        var msg = document.getElementById('bankStatusMsg');
+        var steps = [
+            { text: 'Verifying Your Identity...', pct: 33 },
+            { text: 'Assessing Your Financial History...', pct: 66 },
+            { text: 'Figuring Out What Works For You...', pct: 100 }
+        ];
+        fill.style.transition = 'none';
+        fill.style.width = '0%';
+        msg.textContent = '';
+        msg.classList.remove('fade');
+        overlay.classList.add('open');
+
+        void fill.offsetWidth; // force reflow
+        fill.style.transition = 'width 1.8s cubic-bezier(0.4, 0, 0.2, 1)';
+
+        var idx = 0;
+        function nextStep() {
+            if (idx >= steps.length) {
+                setTimeout(function() {
+                    overlay.classList.remove('open');
+                    connectBank();
+                    goToStep(3);
+                }, 800);
+                return;
+            }
+            msg.classList.add('fade');
+            setTimeout(function() {
+                msg.textContent = steps[idx].text;
+                fill.style.width = steps[idx].pct + '%';
+                msg.classList.remove('fade');
+                idx++;
+                setTimeout(nextStep, 2000);
+            }, 300);
+        }
+        setTimeout(nextStep, 400);
+    }
+    </script>
+</body>
+</html>
