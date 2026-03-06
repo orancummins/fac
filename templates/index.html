@@ -96,6 +96,39 @@
         .panel-title { font-size: 28px; font-weight: 800; letter-spacing: -1px; margin-bottom: 8px; }
         .panel-subtitle { color: var(--mc-text-dim); font-size: 15px; margin-bottom: 32px; }
 
+        /* ── Panel 1 White Theme ── */
+        #panel1.active { min-height: calc(100vh - 60px); display: flex; align-items: flex-start; padding-top: 12vh; position: relative; }
+        #panel1::before {
+            content: ''; position: absolute; top: -60px; left: -24px; right: -24px; bottom: 0; z-index: -1;
+            background: #ffffff;
+        }
+        #panel1 .panel-card {
+            background: transparent; border: none; box-shadow: none;
+            max-width: 640px; margin: 0 auto; padding: 60px 40px;
+            display: flex; flex-direction: column; align-items: center; text-align: center;
+        }
+        #panel1 .panel-title { color: #111; font-size: 32px; margin-bottom: 12px; }
+        #panel1 .panel-subtitle { color: #444; font-size: 16px; margin-bottom: 36px; }
+        #panel1 .intro-input-wrap { width: 100%; }
+        #panel1 .intro-textarea {
+            background: rgba(0,0,0,0.03); border-color: rgba(0,0,0,0.15); color: #111;
+        }
+        #panel1 .intro-textarea::placeholder { color: #888; }
+        #panel1 .intro-textarea:focus { border-color: var(--mc-accent); box-shadow: 0 0 0 3px rgba(255,95,0,0.15); }
+        #panel1 .btn-row { margin-top: 24px; }
+
+        /* ── Step 1: hide badge & steps bar, white header ── */
+        body.on-step-1 { background: #ffffff; }
+        body.on-step-1 .bg-grid { display: none; }
+        body.on-step-1 .header-badge { display: none; }
+        body.on-step-1 .steps-bar { display: none; }
+        body.on-step-1 header {
+            background: rgba(255,255,255,0.95); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
+            border-bottom-color: rgba(0,0,0,0.06);
+        }
+        body.on-step-1 .logo-text { color: #111; }
+        body.on-step-1 .logo-text span { color: var(--mc-orange); }
+
         /* ── Detected Country Banner ── */
         .detected-country {
             display: inline-flex; align-items: center; gap: 10px; padding: 8px 16px 8px 10px;
@@ -684,7 +717,7 @@
         .mt-24 { margin-top: 24px; }
     </style>
 </head>
-<body>
+<body class="on-step-1">
     <div class="bg-grid"></div>
 
     <!-- Bank Login Overlay -->
@@ -1007,7 +1040,7 @@
 
             <div class="agentic-tabs">
                 <button class="agentic-tab active" onclick="switchAgenticTab(0)">Agent Steps</button>
-                <button class="agentic-tab" onclick="switchAgenticTab(1)">Architecture</button>
+                <button class="agentic-tab" onclick="switchAgenticTab(1)">Infographic</button>
             </div>
 
             <div class="agentic-tab-pane active" id="agenticPane0">
@@ -1082,7 +1115,7 @@
             </div><!-- end tab pane 0 -->
 
             <div class="agentic-tab-pane" id="agenticPane1">
-                <img class="agentic-arch-img" src="/static/agentic-architecture.png" alt="Agentic Architecture Diagram">
+                <img class="agentic-arch-img" src="static/agentic-architecture.png" alt="Agentic Architecture Diagram">
             </div>
 
             <button class="agentic-close" onclick="closeAgenticModal()">Close</button>
@@ -1090,6 +1123,15 @@
     </div>
 
     <script>
+    // Detect base URL for reverse proxy support (e.g. /fac/)
+    var BASE = (function() {
+        var s = document.currentScript && document.currentScript.baseURI || window.location.href;
+        var p = new URL(s).pathname;
+        // strip trailing filename if any, keep path ending with /
+        return p.replace(/\/[^/]*$/, '/').replace(/\/+$/, '') + '/';
+    })();
+    // If served at root, BASE = '/'; if at /fac/, BASE = '/fac/'
+
     var IC = {
         shield: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>',
         lock: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>',
@@ -1136,6 +1178,8 @@
         currentStep = step;
         document.querySelectorAll('.panel').forEach(function(p) { p.classList.remove('active'); });
         document.getElementById('panel' + step).classList.add('active');
+        if (step === 1) document.body.classList.add('on-step-1');
+        else document.body.classList.remove('on-step-1');
         if (step <= 6) updateStepsBar();
         window.scrollTo({ top: (step === 6 || step === 5) ? 0 : 200, behavior: 'smooth' });
         if (step === 4) buildSmartCriteria();
@@ -1163,7 +1207,7 @@
     }
 
     function loadCountries() {
-        fetch('/api/countries').then(function(r) { return r.json(); }).then(function(data) {
+        fetch(BASE + 'api/countries').then(function(r) { return r.json(); }).then(function(data) {
             allCountries = data;
             renderCountryGrid(allCountries);
             var us = allCountries.find(function(c) { return c.code === 'US'; });
@@ -1224,12 +1268,15 @@
         connecting.classList.remove('hidden');
         panel.classList.add('hidden');
         sleep(2200).then(function() {
-            return fetch('/api/connect-bank', {
+            return fetch(BASE + 'api/connect-bank', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ country: selectedCountry })
             });
-        }).then(function(r) { return r.json(); }).then(function(data) {
+        }).then(function(r) {
+            if (!r.ok) throw new Error('Server returned ' + r.status);
+            return r.json();
+        }).then(function(data) {
             spendingData = data;
             var grid = document.getElementById('spendingGrid');
             var maxSpend = Math.max.apply(null, data.spending_categories.map(function(c) { return c.monthly_avg; }));
@@ -1266,6 +1313,12 @@
             requestAnimationFrame(function() {
                 document.querySelectorAll('.spending-bar-fill').forEach(function(bar) { bar.style.width = bar.dataset.width + '%'; });
             });
+        }).catch(function(err) {
+            console.error('Bank connect failed:', err);
+            document.getElementById('bankConnecting').innerHTML =
+                '<div class="connecting-anim"><div class="connecting-text" style="color:#ef4444;">Connection failed</div>' +
+                '<div style="font-size:11px;color:var(--mc-text-dim);margin:8px 0;word-break:break-all;max-width:400px;">' + (err.message || err) + '</div>' +
+                '<button class="btn btn-primary" style="margin-top:12px;" onclick="connectBank()">Retry</button></div>';
         });
     }
 
@@ -1361,7 +1414,7 @@
         var phaseIdx = 0;
         function processPhase() {
             if (phaseIdx >= phases.length) return Promise.resolve();
-            return fetch('/api/agent-log', {
+            return fetch(BASE + 'api/agent-log', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ phase: phases[phaseIdx], country: selectedCountry })
@@ -1406,7 +1459,7 @@
         var p = sleep(1500);
 
         p.then(function() {
-            return fetch('/api/search-cards', {
+            return fetch(BASE + 'api/search-cards', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({

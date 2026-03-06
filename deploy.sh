@@ -31,15 +31,19 @@ SCP="sshpass -e scp -o StrictHostKeyChecking=no"
 
 echo "==> Deploying to ${REMOTE}:${REMOTE_DIR}"
 
+# Ensure remote directory structure exists
+echo "==> Ensuring remote directories exist..."
+$SSH "$REMOTE" "mkdir -p ${REMOTE_DIR}/templates ${REMOTE_DIR}/static"
+
 # Back up existing remote files before overwriting
 echo "==> Backing up existing files on remote..."
 $SSH "$REMOTE" bash -l <<BACKUP
-    set -euo pipefail
+    # Don't use set -e here — dir may not exist yet on first deploy
     BACKUP_DIR="${REMOTE_DIR}/BACKUP"
-    mkdir -p "\$BACKUP_DIR"
+    mkdir -p "\$BACKUP_DIR" 2>/dev/null || true
 
     # Only back up if there are files to archive
-    if [ -f "${REMOTE_DIR}/app.py" ]; then
+    if [ -d "${REMOTE_DIR}" ] && [ -f "${REMOTE_DIR}/app.py" ]; then
         TIMESTAMP=\$(date +%Y%m%d_%H%M%S)
         ARCHIVE="\${BACKUP_DIR}/\${TIMESTAMP}.tar.gz"
         cd ${REMOTE_DIR}
@@ -58,30 +62,40 @@ $SSH "$REMOTE" bash -l <<BACKUP
     fi
 BACKUP
 
-# Create remote directory
-$SSH "$REMOTE" "mkdir -p ${REMOTE_DIR}/templates"
+# Copy project files (only those that exist locally)
+echo "==> Copying files..."
+LOCAL_FILES=()
+for f in app.py models.py scraper.py scheduler.py requirements.txt run.sh deploy.sh; do
+    [[ -f "${LOCAL_DIR}/${f}" ]] && LOCAL_FILES+=("${LOCAL_DIR}/${f}")
+done
+if (( ${#LOCAL_FILES[@]} )); then
+    $SCP "${LOCAL_FILES[@]}" "${REMOTE}:${REMOTE_DIR}/"
+fi
 
-# Copy project files (no venv, no db, no pycache)
-$SCP \
-    "${LOCAL_DIR}/app.py" \
-    "${LOCAL_DIR}/models.py" \
-    "${LOCAL_DIR}/scraper.py" \
-    "${LOCAL_DIR}/scheduler.py" \
-    "${LOCAL_DIR}/requirements.txt" \
-    "${LOCAL_DIR}/run.sh" \
-    "${REMOTE}:${REMOTE_DIR}/"
+# Templates
+TMPL_FILES=()
+for f in index.html login.html; do
+    [[ -f "${LOCAL_DIR}/templates/${f}" ]] && TMPL_FILES+=("${LOCAL_DIR}/templates/${f}")
+done
+if (( ${#TMPL_FILES[@]} )); then
+    $SCP "${TMPL_FILES[@]}" "${REMOTE}:${REMOTE_DIR}/templates/"
+fi
 
-$SCP \
-    "${LOCAL_DIR}/templates/index.html" \
-    "${LOCAL_DIR}/templates/login.html" \
-    "${REMOTE}:${REMOTE_DIR}/templates/"
+# Static assets
+STATIC_FILES=()
+for f in "${LOCAL_DIR}"/static/*; do
+    [[ -f "$f" ]] && STATIC_FILES+=("$f")
+done
+if (( ${#STATIC_FILES[@]} )); then
+    $SCP "${STATIC_FILES[@]}" "${REMOTE}:${REMOTE_DIR}/static/"
+fi
 
 # Make run.sh executable on remote
 $SSH "$REMOTE" "chmod +x ${REMOTE_DIR}/run.sh"
 
 echo "==> Files copied. Setting up remote environment..."
 
-# Set up venv, install deps, install Playwright's Chromium
+# Set up venv, install deps
 $SSH "$REMOTE" bash -l <<SETUP
     set -euo pipefail
     cd ${REMOTE_DIR}
@@ -95,8 +109,6 @@ $SSH "$REMOTE" bash -l <<SETUP
     echo "Installing Python dependencies..."
     pip install -q --upgrade pip
     pip install -q -r requirements.txt
-    echo "Installing Playwright Chromium..."
-    playwright install chromium
 
     echo ""
     echo "=============================="

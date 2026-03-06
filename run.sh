@@ -59,14 +59,13 @@ if [ ! -d .venv ]; then
     echo "Installing dependencies..."
     pip install -q --upgrade pip
     pip install -q -r requirements.txt
-    playwright install chromium
 else
     source .venv/bin/activate
 fi
 
-# Start in background
+# Start in background (use explicit venv python to avoid PATH issues under nohup)
 echo "Starting server on port ${PORT}..."
-nohup python app.py > "$LOG_FILE" 2>&1 &
+nohup "${SCRIPT_DIR}/.venv/bin/python" app.py > "$LOG_FILE" 2>&1 &
 SERVER_PID=$!
 sleep 1
 
