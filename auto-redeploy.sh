@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Crontab example (every 2 minutes):
-# */2 * * * * /home/jallen/git/fac/auto-redeploy.sh >> /home/jallen/git/fac/auto-redeploy.log 2>&1
+# Crontab example (every 5 minutes):
+# */5 * * * * cd /home/jallen/git/fac && ./auto-redeploy.sh >> /home/jallen/git/fac/auto-redeploy.log 2>&1
 
 REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 BRANCH="${BRANCH:-main}"
