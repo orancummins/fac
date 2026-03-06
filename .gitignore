@@ -1,0 +1,18 @@
+# OS / editor
+.DS_Store
+.idea/
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Local env / runtime
+.env
+*.log
+nohup.out
+app.log
+
+# Local DB/runtime artifacts
+instance/
