@@ -50,8 +50,6 @@ $SSH "$REMOTE" bash -l <<BACKUP
         tar czf "\$ARCHIVE" \
             --exclude='.venv' \
             --exclude='venv' \
-            --exclude='__pycache__' \
-            --exclude='instance' \
             --exclude='BACKUP' \
             --exclude='*.log' \
             --exclude='.DS_Store' \
