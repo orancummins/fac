@@ -59,12 +59,28 @@
         .logo-text { font-size: 20px; font-weight: 700; letter-spacing: -0.5px; }
         .logo-text span { color: var(--mc-orange); }
         .header-badge {
-            display: flex; align-items: center; gap: 6px; padding: 5px 12px;
-            background: rgba(52,211,153,0.08); border: 1px solid rgba(52,211,153,0.15);
-            border-radius: 100px; font-size: 11px; font-weight: 600; color: var(--mc-green); letter-spacing: 0.5px;
+            display: inline-flex; align-items: center; gap: 8px; padding: 8px 16px;
+            background: linear-gradient(135deg, rgba(255,95,0,0.18), rgba(247,158,27,0.14));
+            border: 1.5px solid rgba(255,95,0,0.55);
+            border-radius: 100px; font-size: 12px; font-weight: 800; color: var(--mc-orange);
+            letter-spacing: 1px; text-transform: uppercase;
+            box-shadow: 0 0 0 0 rgba(255,95,0,0.55);
+            animation: badgePulse 2s ease-in-out infinite;
         }
-        .pulse-dot { width: 6px; height: 6px; background: var(--mc-green); border-radius: 50%; animation: pulse 2s ease-in-out infinite; }
-        @keyframes pulse { 0%,100% { opacity:1; transform:scale(1); } 50% { opacity:0.5; transform:scale(0.8); } }
+        .pulse-dot {
+            width: 8px; height: 8px; background: var(--mc-orange); border-radius: 50%;
+            box-shadow: 0 0 0 0 rgba(255,95,0,0.7);
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+        @keyframes pulse {
+            0% { opacity:1; transform:scale(1); box-shadow: 0 0 0 0 rgba(255,95,0,0.7); }
+            70% { opacity:0.85; transform:scale(1.15); box-shadow: 0 0 0 8px rgba(255,95,0,0); }
+            100% { opacity:1; transform:scale(1); box-shadow: 0 0 0 0 rgba(255,95,0,0); }
+        }
+        @keyframes badgePulse {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(255,95,0,0.45), 0 0 20px rgba(255,95,0,0.25); }
+            50% { box-shadow: 0 0 0 6px rgba(255,95,0,0), 0 0 28px rgba(255,95,0,0.5); }
+        }
 
         /* ── Steps (inline header) ── */
         .steps-bar {
@@ -129,6 +145,50 @@
         }
         body.on-step-1 .logo-text { color: #111; }
         body.on-step-1 .logo-text span { color: var(--mc-orange); }
+
+        /* ── Step 6 (Wallet): white background, hide agent-mode indicator ── */
+        body.on-step-6 { background: #ffffff; }
+        body.on-step-6 .bg-grid { display: none; }
+        body.on-step-6 .header-badge { display: none; }
+        body.on-step-6 header {
+            background: rgba(255,255,255,0.95); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
+            border-bottom-color: rgba(0,0,0,0.06);
+        }
+        body.on-step-6 .logo-text { color: #111; }
+        body.on-step-6 .logo-text span { color: var(--mc-orange); }
+        body.on-step-6 .wallet-message { color: #111; }
+        /* Human-interaction tabs (first & last) — white pill */
+        body.on-step-6 .step-item[data-step="1"],
+        body.on-step-6 .step-item[data-step="6"] {
+            background: #ffffff; color: #111;
+            border: 1px solid rgba(0,0,0,0.15);
+        }
+        body.on-step-6 .step-item[data-step="1"] .step-num,
+        body.on-step-6 .step-item[data-step="6"] .step-num {
+            background: #ffffff; border-color: #111; color: #111;
+        }
+        /* Agent tabs (middle) — black pill */
+        body.on-step-6 .step-item[data-step="2"],
+        body.on-step-6 .step-item[data-step="3"],
+        body.on-step-6 .step-item[data-step="4"],
+        body.on-step-6 .step-item[data-step="5"] {
+            background: #111; color: #ffffff;
+            border: 1px solid #111;
+        }
+        body.on-step-6 .step-item[data-step="2"] .step-num,
+        body.on-step-6 .step-item[data-step="3"] .step-num,
+        body.on-step-6 .step-item[data-step="4"] .step-num,
+        body.on-step-6 .step-item[data-step="5"] .step-num {
+            background: #111; border-color: #ffffff; color: #ffffff;
+        }
+        /* Active (current) step 6 — orange accent border while staying white */
+        body.on-step-6 .step-item[data-step="6"].active {
+            border-color: var(--mc-orange); color: var(--mc-orange);
+        }
+        body.on-step-6 .step-item[data-step="6"].active .step-num {
+            border-color: var(--mc-orange); color: var(--mc-orange);
+        }
+        body.on-step-6 .step-connector { background: rgba(0,0,0,0.12); }
 
         /* ── Detected Country Banner ── */
         .detected-country {
@@ -201,6 +261,108 @@
             cursor: pointer; transition: var(--transition);
         }
         .agentic-close:hover { background: rgba(255,255,255,0.1); }
+
+        /* ── Real Example Button & Modal ── */
+        .real-example-btn {
+            display: inline-flex; align-items: center; gap: 4px;
+            margin-left: 8px; margin-top: 6px; padding: 4px 12px; border-radius: 100px;
+            font-size: 10px; font-weight: 600; font-family: inherit;
+            background: rgba(96,165,250,0.1); color: #60a5fa;
+            border: 1px solid rgba(96,165,250,0.2);
+            cursor: pointer; transition: var(--transition); letter-spacing: 0.03em;
+        }
+        .real-example-btn:hover {
+            background: rgba(96,165,250,0.2); border-color: rgba(96,165,250,0.4);
+            transform: translateY(-1px);
+        }
+        .real-example-overlay {
+            display: none; position: fixed; inset: 0; z-index: 400;
+            background: rgba(0,0,0,0.75); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+            align-items: center; justify-content: center;
+        }
+        .real-example-overlay.open { display: flex; }
+        .real-example-modal {
+            background: var(--mc-card); border: 1px solid rgba(255,255,255,0.1); border-radius: var(--radius);
+            padding: 0; max-width: 560px; width: 92%; max-height: 85vh; overflow-y: auto;
+            box-shadow: 0 40px 80px rgba(0,0,0,0.6);
+        }
+        .real-example-header {
+            padding: 28px 28px 20px; border-bottom: 1px solid rgba(255,255,255,0.06);
+            display: flex; align-items: flex-start; gap: 16px;
+        }
+        .real-example-icon {
+            width: 48px; height: 48px; border-radius: 12px; flex-shrink: 0;
+            display: flex; align-items: center; justify-content: center; font-size: 24px;
+            background: linear-gradient(135deg, rgba(96,165,250,0.15), rgba(96,165,250,0.05));
+            border: 1px solid rgba(96,165,250,0.2);
+        }
+        .real-example-title { font-size: 18px; font-weight: 800; letter-spacing: -0.3px; margin-bottom: 4px; }
+        .real-example-protocol { font-size: 11px; font-weight: 600; color: var(--mc-orange); text-transform: uppercase; letter-spacing: 0.5px; }
+        .real-example-body { padding: 24px 28px; }
+        .real-example-company {
+            display: flex; align-items: center; gap: 12px; padding: 16px;
+            background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06);
+            border-radius: var(--radius-sm); margin-bottom: 16px;
+        }
+        .real-example-company-logo {
+            width: 44px; height: 44px; border-radius: 10px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 20px; font-weight: 800; color: #fff; flex-shrink: 0;
+        }
+        .real-example-company-name { font-size: 15px; font-weight: 700; }
+        .real-example-company-type { font-size: 11px; color: var(--mc-text-dim); }
+        .real-example-desc { font-size: 13px; color: var(--mc-text-dim); line-height: 1.7; margin-bottom: 20px; }
+        .real-example-desc em { color: var(--mc-orange); font-style: italic; }
+        .real-example-desc strong { color: var(--mc-text); }
+        .real-example-graphic {
+            padding: 20px; margin-bottom: 20px;
+            background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.06);
+            border-radius: var(--radius-sm); text-align: center;
+        }
+        .real-example-graphic-label {
+            font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px;
+            color: var(--mc-text-dim); margin-bottom: 12px;
+        }
+        .real-example-flow {
+            display: flex; align-items: center; justify-content: center; gap: 8px; flex-wrap: wrap;
+        }
+        .real-example-flow-step {
+            padding: 6px 12px; border-radius: 8px; font-size: 11px; font-weight: 600;
+            background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.08); color: var(--mc-text);
+        }
+        .real-example-flow-arrow { color: var(--mc-orange); font-size: 14px; }
+        .real-example-stats {
+            display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 20px;
+        }
+        .real-example-stat {
+            padding: 12px; text-align: center; background: rgba(255,255,255,0.02);
+            border: 1px solid rgba(255,255,255,0.06); border-radius: 8px;
+        }
+        .real-example-stat-value {
+            font-size: 18px; font-weight: 800;
+            background: linear-gradient(135deg, var(--mc-orange), var(--mc-yellow));
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+        }
+        .real-example-stat-label { font-size: 10px; color: var(--mc-text-dim); margin-top: 2px; }
+        .real-example-link {
+            display: inline-flex; align-items: center; gap: 6px;
+            padding: 8px 16px; border-radius: 8px; font-size: 12px; font-weight: 600;
+            background: rgba(96,165,250,0.08); border: 1px solid rgba(96,165,250,0.15);
+            color: #60a5fa; text-decoration: none; transition: var(--transition);
+        }
+        .real-example-link:hover { background: rgba(96,165,250,0.15); border-color: rgba(96,165,250,0.3); }
+        .real-example-footer {
+            padding: 16px 28px; border-top: 1px solid rgba(255,255,255,0.06);
+            display: flex; justify-content: flex-end; align-items: center;
+        }
+        .real-example-close {
+            padding: 8px 24px; border-radius: 100px;
+            background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1);
+            color: var(--mc-text); font-size: 13px; font-weight: 600; font-family: inherit;
+            cursor: pointer; transition: var(--transition);
+        }
+        .real-example-close:hover { background: rgba(255,255,255,0.1); }
+
         /* ── Agentic Modal Tabs ── */
         .agentic-tabs { display: flex; gap: 0; margin-bottom: 24px; border-bottom: 1px solid rgba(255,255,255,0.08); }
         .agentic-tab {
@@ -724,6 +886,10 @@
     <!-- Bank Login Overlay -->
     <div class="bank-login-overlay" id="bankLoginOverlay">
         <div class="bank-login-box">
+            <div class="header-badge" style="margin: 0 auto 20px;">
+                <div class="pulse-dot"></div>
+                AGENTIC MODE
+            </div>
             <div class="bank-login-icon"><svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><path d="M5 21V11M9 21V11M15 21V11M19 21V11"/><path d="M12 3L2 9h20z"/></svg></div>
             <div class="bank-login-title">Connecting To Your Bank</div>
             <div class="bank-login-sub">Securely analyzing your financial profile via Open Banking</div>
@@ -1123,6 +1289,35 @@
         </div>
     </div>
 
+    <!-- Real Example Modal -->
+    <div class="real-example-overlay" id="realExampleOverlay" onclick="if(event.target===this)closeRealExample()">
+        <div class="real-example-modal">
+            <div class="real-example-header">
+                <div class="real-example-icon" id="realExIcon"></div>
+                <div>
+                    <div class="real-example-protocol" id="realExProtocol"></div>
+                    <div class="real-example-title" id="realExTitle"></div>
+                </div>
+            </div>
+            <div class="real-example-body">
+                <div class="real-example-company">
+                    <div class="real-example-company-logo" id="realExLogo"></div>
+                    <div>
+                        <div class="real-example-company-name" id="realExCompanyName"></div>
+                        <div class="real-example-company-type" id="realExCompanyType"></div>
+                    </div>
+                </div>
+                <div class="real-example-desc" id="realExDesc"></div>
+                <div class="real-example-graphic" id="realExGraphic"></div>
+                <div class="real-example-stats" id="realExStats"></div>
+                <div id="realExLinks"></div>
+            </div>
+            <div class="real-example-footer">
+                <button class="real-example-close" onclick="closeRealExample()">Close</button>
+            </div>
+        </div>
+    </div>
+
     <script>
     // Detect base URL for reverse proxy support (e.g. /fac/)
     var BASE = (function() {
@@ -1181,6 +1376,8 @@
         document.getElementById('panel' + step).classList.add('active');
         if (step === 1) document.body.classList.add('on-step-1');
         else document.body.classList.remove('on-step-1');
+        if (step === 6) document.body.classList.add('on-step-6');
+        else document.body.classList.remove('on-step-6');
         if (step <= 6) updateStepsBar();
         window.scrollTo({ top: (step === 6 || step === 5) ? 0 : 200, behavior: 'smooth' });
         if (step === 4) buildSmartCriteria();
@@ -1708,6 +1905,203 @@
         }
         setTimeout(nextStep, 400);
     }
+
+    // ── Real-World Examples for Each Protocol ──
+    var REAL_EXAMPLES = [
+        {
+            icon: '\ud83e\udde0',
+            protocol: 'Protocol 1 — Natural Language Understanding',
+            title: 'Klarna AI Shopping Assistant',
+            companyName: 'Klarna',
+            companyType: 'Buy Now, Pay Later & AI Shopping',
+            logoColor: '#FFB3C7',
+            logoText: 'K',
+            desc: 'Klarna\'s AI assistant, powered by OpenAI, handles 2.3 million customer conversations per month. It understands natural language queries like <em>"I need to return my shoes"</em> or <em>"show me deals on electronics"</em>, extracting intent, product preferences, and urgency to deliver instant, personalized responses — replacing the work of 700 human agents.',
+            graphicLabel: 'How it works',
+            graphicFlow: ['User Query', 'GPT-4 Parser', 'Intent + Entities', 'Action Router', 'Response'],
+            stats: [
+                { value: '2.3M', label: 'Chats / Month' },
+                { value: '700', label: 'Agents Replaced' },
+                { value: '25%', label: 'Fewer Repeats' }
+            ],
+            links: [
+                { text: 'Klarna AI Press Release', url: 'https://www.klarna.com/international/press/klarna-ai-assistant-handles-two-thirds-of-customer-service-chats-in-its-first-month/' }
+            ]
+        },
+        {
+            icon: '\ud83d\udccd',
+            protocol: 'Protocol 2 — Location Detection',
+            title: 'Revolut Auto Currency Switching',
+            companyName: 'Revolut',
+            companyType: 'Digital Banking & Multi-Currency',
+            logoColor: '#0075EB',
+            logoText: 'R',
+            desc: 'Revolut automatically detects when you cross a border and switches your default currency in real time. The app uses device GPS and network signals to identify your location, showing local currency conversion rates, nearby fee-free ATMs, and region-specific card controls — all without any manual input.',
+            graphicLabel: 'Detection flow',
+            graphicFlow: ['GPS + IP', 'Country ID', 'Currency Switch', 'Local ATMs', 'Card Controls'],
+            stats: [
+                { value: '45M+', label: 'Global Users' },
+                { value: '150+', label: 'Currencies' },
+                { value: '<1s', label: 'Detection Time' }
+            ],
+            links: [
+                { text: 'Revolut Currency Exchange', url: 'https://www.revolut.com/en-US/currency-exchange/' }
+            ]
+        },
+        {
+            icon: '\ud83c\udfe6',
+            protocol: 'Protocol 3 — Open Banking',
+            title: 'Plaid Account Linking',
+            companyName: 'Plaid',
+            companyType: 'Open Banking Infrastructure',
+            logoColor: '#111111',
+            logoText: 'P',
+            desc: 'Plaid powers the bank connections behind Venmo, Robinhood, Coinbase, and thousands more apps. Through secure Open Banking APIs, Plaid connects to 12,000+ financial institutions to read transaction history, account balances, and income data — all with explicit user consent and bank-grade encryption.',
+            graphicLabel: 'Data pipeline',
+            graphicFlow: ['User Consent', 'Bank Auth', 'API Connect', 'Data Extract', 'App Delivery'],
+            stats: [
+                { value: '12,000+', label: 'Banks Connected' },
+                { value: '8,000+', label: 'Apps Powered' },
+                { value: '100M+', label: 'Accounts Linked' }
+            ],
+            links: [
+                { text: 'Plaid — How It Works', url: 'https://plaid.com/how-it-works/' }
+            ]
+        },
+        {
+            icon: '\ud83c\udfaf',
+            protocol: 'Protocol 4 — Lifestyle Profiling',
+            title: 'Amex Personalized Offers',
+            companyName: 'American Express',
+            companyType: 'Card Issuer & Personalization Engine',
+            logoColor: '#006FCF',
+            logoText: 'A',
+            desc: 'American Express analyzes cardholders\' transaction patterns across dining, travel, shopping, and entertainment to build behavioral profiles. These profiles power <strong>Amex Offers</strong> — a real-time system that matches merchants to your actual spending habits. Frequent diners see restaurant cashback; frequent travelers see airline and hotel deals.',
+            graphicLabel: 'Profile building',
+            graphicFlow: ['Transactions', 'ML Categorize', 'Behavior Vectors', 'Offer Matching', 'Personalized Feed'],
+            stats: [
+                { value: '100M+', label: 'Cardholders' },
+                { value: '200+', label: 'Merchant Partners' },
+                { value: 'Real-time', label: 'Offer Matching' }
+            ],
+            links: [
+                { text: 'Amex Offers Program', url: 'https://www.americanexpress.com/us/credit-cards/features-benefits/amex-offers.html' }
+            ]
+        },
+        {
+            icon: '\ud83d\udd0d',
+            protocol: 'Protocol 5 — Card Matching',
+            title: 'NerdWallet CardMatch\u2122',
+            companyName: 'NerdWallet',
+            companyType: 'Financial Product Comparison',
+            logoColor: '#20C05C',
+            logoText: 'N',
+            desc: 'NerdWallet\'s CardMatch\u2122 tool performs a soft credit inquiry (no score impact) combined with your stated preferences to score and rank 100+ credit card products. Each card is evaluated on rewards value, approval odds, fee efficiency, and benefit alignment — surfacing a personalized shortlist with clear explanations of why each card matches your profile.',
+            graphicLabel: 'Matching engine',
+            graphicFlow: ['Credit Pull', 'Preference Input', 'Score 100+ Cards', 'Rank & Explain', 'Top Matches'],
+            stats: [
+                { value: '100+', label: 'Cards Scored' },
+                { value: '~45M', label: 'Monthly Users' },
+                { value: 'No Impact', label: 'Soft Pull Only' }
+            ],
+            links: [
+                { text: 'NerdWallet Credit Cards', url: 'https://www.nerdwallet.com/credit-cards' }
+            ]
+        },
+        {
+            icon: '\u26a1',
+            protocol: 'Protocol 6 — Autonomous Application',
+            title: 'Apple Card Instant Approval',
+            companyName: 'Apple',
+            companyType: 'Consumer Technology & Financial Services',
+            logoColor: '#333333',
+            logoText: '\uf8ff',
+            desc: 'Apple Card\'s application flow in the iOS Wallet app automatically fills your personal information from your Apple ID, submits the application to Goldman Sachs, and returns an instant credit decision. From tapping <em>"Apply"</em> to having a working virtual card in Apple Pay takes under 2 minutes — with zero paper forms, no branch visits, and no waiting.',
+            graphicLabel: 'Application flow',
+            graphicFlow: ['Tap Apply', 'Auto-Fill Info', 'Instant Decision', 'Card Created', 'In Wallet'],
+            stats: [
+                { value: '<2 min', label: 'Apply to Card' },
+                { value: 'Instant', label: 'Credit Decision' },
+                { value: 'Zero', label: 'Paper Forms' }
+            ],
+            links: [
+                { text: 'Apple Card', url: 'https://www.apple.com/apple-card/' }
+            ]
+        },
+        {
+            icon: '\ud83d\udcf1',
+            protocol: 'Protocol 7 — Wallet Provisioning',
+            title: 'Mastercard MDES Tokenization',
+            companyName: 'Mastercard',
+            companyType: 'Global Payments Network',
+            logoColor: '#FF5F00',
+            logoText: 'M',
+            desc: 'The Mastercard Digital Enablement Service (MDES) replaces your real card number with a secure digital token. When a new card is approved, MDES provisions it directly into Apple Pay, Google Pay, or Samsung Pay within seconds — enabling instant contactless payments before a physical card ever arrives. The token is device-specific, adding an extra layer of security.',
+            graphicLabel: 'Token provisioning',
+            graphicFlow: ['Card Approved', 'MDES Tokenize', 'Push to Wallet', 'NFC Ready', 'Tap & Pay \u2713'],
+            stats: [
+                { value: '3.5B+', label: 'Tokens Issued' },
+                { value: '150+', label: 'Countries' },
+                { value: 'Instant', label: 'Provisioning' }
+            ],
+            links: [
+                { text: 'Mastercard MDES', url: 'https://developer.mastercard.com/product/mdes-digital-enablement/' }
+            ]
+        }
+    ];
+
+    function openRealExample(idx) {
+        var ex = REAL_EXAMPLES[idx];
+        if (!ex) return;
+        document.getElementById('realExIcon').textContent = ex.icon;
+        document.getElementById('realExProtocol').textContent = ex.protocol;
+        document.getElementById('realExTitle').textContent = ex.title;
+        document.getElementById('realExLogo').style.background = ex.logoColor;
+        document.getElementById('realExLogo').textContent = ex.logoText;
+        document.getElementById('realExCompanyName').textContent = ex.companyName;
+        document.getElementById('realExCompanyType').textContent = ex.companyType;
+        document.getElementById('realExDesc').innerHTML = ex.desc;
+        var graphicHtml = '<div class="real-example-graphic-label">' + ex.graphicLabel + '</div><div class="real-example-flow">';
+        for (var i = 0; i < ex.graphicFlow.length; i++) {
+            if (i > 0) graphicHtml += '<span class="real-example-flow-arrow">\u2192</span>';
+            graphicHtml += '<span class="real-example-flow-step">' + ex.graphicFlow[i] + '</span>';
+        }
+        graphicHtml += '</div>';
+        document.getElementById('realExGraphic').innerHTML = graphicHtml;
+        var statsHtml = '';
+        for (var s = 0; s < ex.stats.length; s++) {
+            statsHtml += '<div class="real-example-stat"><div class="real-example-stat-value">' +
+                ex.stats[s].value + '</div><div class="real-example-stat-label">' + ex.stats[s].label + '</div></div>';
+        }
+        document.getElementById('realExStats').innerHTML = statsHtml;
+        var linksHtml = '';
+        for (var l = 0; l < ex.links.length; l++) {
+            linksHtml += '<a class="real-example-link" href="' + ex.links[l].url + '" target="_blank" rel="noopener noreferrer">\ud83d\udd17 ' + ex.links[l].text + '</a> ';
+        }
+        document.getElementById('realExLinks').innerHTML = linksHtml;
+        document.getElementById('realExampleOverlay').classList.add('open');
+    }
+
+    function closeRealExample() {
+        document.getElementById('realExampleOverlay').classList.remove('open');
+    }
+
+    // Add real example buttons to each agentic step
+    (function() {
+        var pane = document.getElementById('agenticPane0');
+        if (!pane) return;
+        var steps = pane.querySelectorAll('.agentic-step');
+        steps.forEach(function(step, idx) {
+            var tag = step.querySelector('.agentic-step-tag');
+            if (tag) {
+                var btn = document.createElement('button');
+                btn.className = 'real-example-btn';
+                btn.innerHTML = '\ud83d\udca1 Real Example';
+                btn.onclick = function(e) { e.stopPropagation(); openRealExample(idx); };
+                tag.parentNode.insertBefore(btn, tag.nextSibling);
+            }
+        });
+    })();
     </script>
 </body>
 </html>
